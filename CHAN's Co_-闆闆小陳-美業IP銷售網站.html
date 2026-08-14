@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>CHAN's Co.｜闆闆小陳・美業個人IP × 流量變現</title>
+<meta name="description" content="從護理師到美業月收入變現者——闆闆小陳把她的個人IP與流量變現方法，整理成一套美業人可以直接使用的系統與儀表板。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700;900&family=Noto+Sans+TC:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17130F;
+    --ink-soft:#2A2420;
+    --paper:#F7F3EC;
+    --paper-dim:#EFE8DA;
+    --paper-line:rgba(23,19,15,0.12);
+    --wine:#6E2A3B;
+    --wine-light:#8C3F52;
+    --wine-pale:#F1E3E5;
+    --brass:#B9925A;
+    --brass-light:#D8B989;
+    --sage:#77836A;
+    --muted:#6B645C;
+    --muted-light:#8A8378;
+    --on-ink:#F3EFE6;
+    --on-ink-muted:#B8AF9F;
+    --radius-sm:4px;
+    --radius-md:10px;
+    --radius-lg:22px;
+    --serif:"Noto Serif TC", "Songti TC", serif;
+    --sans:"Noto Sans TC", "PingFang TC", sans-serif;
+    --mono:"IBM Plex Mono", monospace;
+    --ease:cubic-bezier(.22,.9,.32,1);
+  }
+  *{box-sizing:border-box;}
+  html{ scroll-behavior:smooth; color-scheme:light; }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; scroll-behavior:auto!important;}
+  }
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  img{max-width:100%; display:block;}
+  a{color:inherit;}
+  ::selection{ background:var(--wine); color:var(--on-ink); }
+
+  .wrap{ max-width:1120px; margin:0 auto; padding:0 24px; }
+  @media (min-width:768px){ .wrap{ padding:0 48px; } }
+
+  h1,h2,h3,h4{
+    font-family:var(--serif);
+    font-weight:700;
+    margin:0;
+    letter-spacing:.01em;
+  }
+  p{ margin:0; }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--wine);
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px; height:1px;
+    background:var(--wine);
+    display:inline-block;
+  }
+  .eyebrow.on-ink{ color:var(--brass-light); }
+  .eyebrow.on-ink::before{ background:var(--brass-light); }
+
+  /* ---------- reveal ---------- */
+  .reveal{ opacity:0; transform:translateY(28px); transition:opacity .9s var(--ease), transform .9s var(--ease); }
+  .reveal.is-in{ opacity:1; transform:translateY(0); }
+  .reveal-stagger > *{ opacity:0; transform:translateY(20px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
+  .reveal-stagger.is-in > *{ opacity:1; transform:translateY(0); }
+  .reveal-stagger.is-in > *:nth-child(1){transition-delay:.02s;}
+  .reveal-stagger.is-in > *:nth-child(2){transition-delay:.10s;}
+  .reveal-stagger.is-in > *:nth-child(3){transition-delay:.18s;}
+  .reveal-stagger.is-in > *:nth-child(4){transition-delay:.26s;}
+  .reveal-stagger.is-in > *:nth-child(5){transition-delay:.34s;}
+  .reveal-stagger.is-in > *:nth-child(6){transition-delay:.42s;}
+  .reveal-stagger.is-in > *:nth-child(7){transition-delay:.50s;}
+  .reveal-stagger.is-in > *:nth-child(8){transition-delay:.58s;}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    font-family:var(--sans);
+    font-weight:600;
+    font-size:15px;
+    padding:16px 30px;
+    border-radius:100px;
+    border:1px solid transparent;
+    cursor:pointer;
+    text-decoration:none;
+    transition:transform .35s var(--ease), box-shadow .35s var(--ease), background .3s ease, border-color .3s ease;
+    white-space:nowrap;
+  }
+  .btn-primary{
+    background:var(--wine);
+    color:var(--on-ink);
+    box-shadow:0 10px 26px -12px rgba(110,42,59,.6);
+  }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 16px 32px -12px rgba(110,42,59,.7); }
+  .btn-ghost{
+    background:transparent;
+    color:var(--ink);
+    border-color:var(--paper-line);
+  }
+  .btn-ghost:hover{ border-color:var(--ink); transform:translateY(-2px); }
+  .btn-ghost.on-ink{ color:var(--on-ink); border-color:rgba(243,239,230,.28); }
+  .btn-ghost.on-ink:hover{ border-color:var(--on-ink); }
+  .btn-brass{
+    background:var(--brass);
+    color:var(--ink);
+    box-shadow:0 10px 26px -12px rgba(185,146,90,.55);
+  }
+  .btn-brass:hover{ transform:translateY(-2px); box-shadow:0 16px 32px -12px rgba(185,146,90,.7); }
+  .btn-block{ width:100%; }
+
+  /* ---------- nav ---------- */
+  header.site-nav{
+    position:fixed; top:0; left:0; right:0; z-index:60;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 24px;
+    background:rgba(247,243,236,.72);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s ease, background .3s ease;
+  }
+  header.site-nav.scrolled{ border-color:var(--paper-line); }
+  @media (min-width:768px){ header.site-nav{ padding:20px 48px; } }
+  .logo{
+    font-family:var(--serif); font-weight:700; font-size:16px; letter-spacing:.03em;
+    text-decoration:none; color:var(--ink); white-space:nowrap;
+  }
+  @media (min-width:480px){ .logo{ font-size:19px; } }
+  .logo span{ color:var(--wine); }
+  .nav-cta{ font-size:13px; padding:11px 22px; }
+  .nav-links{ display:none; }
+  @media (min-width:900px){
+    .nav-links{ display:flex; gap:32px; font-size:14px; color:var(--muted); }
+    .nav-links a{ text-decoration:none; transition:color .25s ease; }
+    .nav-links a:hover{ color:var(--wine); }
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;
+    background:var(--ink);
+    color:var(--on-ink);
+    padding:150px 0 96px;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      radial-gradient(60% 55% at 82% 8%, rgba(110,42,59,.42), transparent 60%),
+      radial-gradient(45% 40% at 5% 95%, rgba(185,146,90,.16), transparent 65%);
+    pointer-events:none;
+  }
+  .hero-grid{
+    position:relative; z-index:2;
+    display:grid; gap:56px;
+  }
+  @media (min-width:980px){
+    .hero-grid{ grid-template-columns:1.15fr .85fr; align-items:end; gap:40px; }
+  }
+  .hero h1{
+    font-size:clamp(24px, 4.6vw, 40px);
+    line-height:1.32;
+    margin-top:22px;
+    letter-spacing:.005em;
+  }
+  .hero h1 em{ color:var(--brass-light); font-style:normal; }
+  .hero .sub{
+    margin-top:24px;
+    font-size:clamp(15px, 1.8vw, 17.5px);
+    color:var(--on-ink-muted);
+    max-width:46ch;
+    font-weight:300;
+  }
+  .hero-ctas{ display:flex; flex-wrap:wrap; gap:14px; margin-top:38px; }
+
+  /* dashboard signature widget */
+  .dash-card{
+    position:relative;
+    background:linear-gradient(165deg, #23201B, #17130F 65%);
+    border:1px solid rgba(243,239,230,.1);
+    border-radius:var(--radius-lg);
+    padding:26px 24px 22px;
+    box-shadow:0 40px 80px -30px rgba(0,0,0,.65);
+  }
+  .dash-card .dash-head{
+    display:flex; align-items:center; justify-content:space-between;
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+    color:var(--on-ink-muted); text-transform:uppercase;
+    margin-bottom:18px;
+  }
+  .dash-dot{ width:7px; height:7px; border-radius:50%; background:var(--sage); display:inline-block; margin-right:6px; box-shadow:0 0 0 3px rgba(119,131,106,.2);}
+  .dash-stats{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .dash-stat{
+    background:rgba(243,239,230,.04);
+    border:1px solid rgba(243,239,230,.08);
+    border-radius:var(--radius-md);
+    padding:16px 14px;
+  }
+  .dash-stat .label{ font-size:11.5px; color:var(--on-ink-muted); font-family:var(--sans); }
+  .dash-stat .num{
+    font-family:var(--mono); font-weight:600; font-size:24px; color:var(--on-ink);
+    margin-top:8px; letter-spacing:.01em;
+  }
+  .dash-stat .num small{ font-size:13px; color:var(--brass-light); font-weight:500; margin-left:2px;}
+  .dash-bars{
+    display:flex; align-items:flex-end; gap:6px; height:52px; margin-top:16px;
+    padding:10px 12px 0; background:rgba(243,239,230,.04); border-radius:var(--radius-md);
+    border:1px solid rgba(243,239,230,.08);
+  }
+  .dash-bars i{
+    flex:1; background:linear-gradient(180deg, var(--brass-light), var(--wine-light));
+    border-radius:3px 3px 0 0; opacity:.85;
+    animation:barGrow 1.4s var(--ease) forwards;
+    transform-origin:bottom;
+    transform:scaleY(0);
+  }
+  @keyframes barGrow{ to{ transform:scaleY(1); } }
+  .dash-foot{
+    margin-top:16px; font-family:var(--mono); font-size:11px; color:var(--on-ink-muted);
+    display:flex; justify-content:space-between;
+  }
+
+  /* ---------- sections generic ---------- */
+  section{ padding:96px 0; position:relative; }
+  @media (max-width:600px){ section{ padding:72px 0; } }
+  .section-ink{ background:var(--ink); color:var(--on-ink); }
+  .section-dim{ background:var(--paper-dim); }
+  .head-block{ max-width:640px; }
+  .head-block h2{
+    font-size:clamp(22px, 3.6vw, 34px);
+    line-height:1.4;
+    margin-top:16px;
+  }
+  .head-block .desc{ margin-top:18px; color:var(--muted); font-size:16.5px; max-width:56ch; }
+  .section-ink .head-block .desc{ color:var(--on-ink-muted); }
+
+  /* ---------- problems ---------- */
+  .problem-list{
+    margin-top:52px;
+    display:grid; gap:1px;
+    background:var(--paper-line);
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius-md);
+    overflow:hidden;
+  }
+  .problem-item{
+    background:var(--paper);
+    display:flex; gap:18px; align-items:flex-start;
+    padding:22px 24px;
+  }
+  .problem-item .mark{
+    font-family:var(--mono); color:var(--wine); font-size:13px; margin-top:3px; flex-shrink:0; opacity:.7;
+  }
+  .problem-item p{ font-size:16px; }
+  .problem-close{
+    margin-top:44px;
+    padding:30px 28px;
+    background:var(--wine);
+    color:var(--on-ink);
+    border-radius:var(--radius-md);
+    font-family:var(--serif); font-size:19px; line-height:1.7;
+  }
+  .problem-close strong{ color:var(--brass-light); font-weight:700; }
+
+  /* ---------- timeline (real sequence) ---------- */
+  .timeline{ margin-top:56px; position:relative; padding-left:28px; }
+  .timeline::before{
+    content:""; position:absolute; left:5px; top:6px; bottom:6px; width:1px;
+    background:linear-gradient(var(--wine), var(--brass));
+    opacity:.4;
+  }
+  .t-item{ position:relative; padding-bottom:38px; }
+  .t-item:last-child{ padding-bottom:0; }
+  .t-item::before{
+    content:""; position:absolute; left:-28px; top:5px; width:11px; height:11px; border-radius:50%;
+    background:var(--paper); border:2px solid var(--wine);
+  }
+  .t-item.highlight::before{ background:var(--wine); }
+  .t-item .t-tag{ font-family:var(--mono); font-size:11.5px; letter-spacing:.1em; color:var(--muted-light); text-transform:uppercase; }
+  .t-item h4{ font-size:19px; margin-top:6px; }
+  .t-item p{ margin-top:8px; color:var(--muted); font-size:15.5px; max-width:56ch; }
+
+  /* ---------- proof stats ---------- */
+  .proof-grid{
+    margin-top:52px;
+    display:grid; grid-template-columns:1fr 1fr; gap:1px;
+    background:var(--paper-line); border:1px solid var(--paper-line); border-radius:var(--radius-md); overflow:hidden;
+  }
+  @media (min-width:768px){ .proof-grid{ grid-template-columns:repeat(4,1fr); } }
+  .proof-cell{ background:var(--paper); padding:30px 22px; }
+  .proof-cell .num{ font-family:var(--mono); font-weight:600; font-size:clamp(22px,3.4vw,28px); color:var(--wine); }
+  .proof-cell .lbl{ margin-top:8px; font-size:13.5px; color:var(--muted); }
+
+  /* ---------- contrast ---------- */
+  .contrast-list{ margin-top:52px; display:flex; flex-direction:column; gap:1px; background:var(--paper-line); border:1px solid var(--paper-line); border-radius:var(--radius-md); overflow:hidden; }
+  .contrast-row{ background:var(--paper); display:grid; grid-template-columns:1fr; }
+  @media (min-width:820px){ .contrast-row{ grid-template-columns:1fr 1fr; } }
+  .contrast-cell{ padding:22px 26px; }
+  .contrast-cell.no{ color:var(--muted-light); font-size:15px; }
+  .contrast-cell.no::before{ content:"不是 — "; color:var(--muted-light); font-family:var(--mono); font-size:12px; }
+  .contrast-cell.yes{ font-size:16.5px; font-weight:500; background:var(--wine-pale); }
+  .contrast-cell.yes::before{ content:"而是 — "; color:var(--wine); font-family:var(--mono); font-size:12px; font-weight:600; }
+  .core-line{
+    margin-top:48px; text-align:left;
+    font-family:var(--serif); font-size:clamp(18px,2.6vw,22px); line-height:1.75;
+    border-left:3px solid var(--wine); padding-left:24px;
+  }
+  .core-line .strike{ color:var(--muted-light); text-decoration:line-through; text-decoration-color:var(--wine); text-decoration-thickness:1.5px; }
+
+  /* ---------- system 6 stages ---------- */
+  .stage-grid{ margin-top:56px; display:grid; gap:20px; grid-template-columns:1fr; }
+  @media (min-width:700px){ .stage-grid{ grid-template-columns:1fr 1fr; } }
+  @media (min-width:1050px){ .stage-grid{ grid-template-columns:repeat(3,1fr); } }
+  .stage-card{
+    background:rgba(243,239,230,.03);
+    border:1px solid rgba(243,239,230,.1);
+    border-radius:var(--radius-lg);
+    padding:30px 26px;
+    transition:transform .4s var(--ease), border-color .4s var(--ease), background .4s var(--ease);
+  }
+  .stage-card:hover{ transform:translateY(-6px); border-color:rgba(185,146,90,.5); background:rgba(243,239,230,.06); }
+  .stage-card .stage-num{ font-family:var(--mono); color:var(--brass-light); font-size:13px; letter-spacing:.1em; }
+  .stage-card h4{ font-size:19px; margin-top:14px; color:var(--on-ink); }
+  .stage-card p{ margin-top:12px; color:var(--on-ink-muted); font-size:15px; }
+  .stage-connector{ display:flex; align-items:center; justify-content:center; color:var(--brass-light); opacity:.5; font-family:var(--mono); font-size:12px; padding:2px 0; }
+
+  /* ---------- outcomes ---------- */
+  .outcome-grid{ margin-top:52px; display:grid; gap:16px; grid-template-columns:1fr; }
+  @media (min-width:700px){ .outcome-grid{ grid-template-columns:1fr 1fr; } }
+  .outcome-item{ display:flex; gap:14px; align-items:flex-start; }
+  .outcome-item .chk{
+    flex-shrink:0; width:22px; height:22px; border-radius:50%; background:var(--wine);
+    display:flex; align-items:center; justify-content:center; margin-top:2px;
+  }
+  .outcome-item .chk svg{ width:11px; height:11px; }
+  .outcome-item p{ font-size:16px; }
+  .section-ink .outcome-item p{ color:var(--on-ink); }
+
+  /* ---------- product / dashboard ---------- */
+  .product-hero{
+    margin-top:56px;
+    display:grid; gap:40px;
+  }
+  @media (min-width:980px){ .product-hero{ grid-template-columns:1fr 1fr; align-items:center; } }
+  .product-copy .tag{
+    display:inline-block; font-family:var(--mono); font-size:11.5px; letter-spacing:.12em;
+    color:var(--wine); background:var(--wine-pale); padding:6px 12px; border-radius:100px; text-transform:uppercase;
+  }
+  .product-copy h3{ font-size:clamp(20px,3vw,26px); margin-top:18px; line-height:1.55; }
+  .product-copy p{ margin-top:16px; color:var(--muted); font-size:16px; }
+
+  .mockup-phone{
+    position:relative; margin:0 auto; width:100%; max-width:300px;
+    border-radius:34px; background:var(--ink); padding:12px;
+    box-shadow:0 40px 70px -28px rgba(23,19,15,.4);
+  }
+  .mockup-screen{
+    background:linear-gradient(180deg,#FBF8F2,#F1E9DA);
+    border-radius:24px; padding:18px 16px; min-height:420px;
+  }
+  .mockup-screen .m-head{ font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; }
+  .mockup-screen .m-title{ font-family:var(--serif); font-size:18px; margin-top:6px; color:var(--ink); }
+  .mockup-cards{ margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .m-card{ background:#fff; border-radius:12px; padding:12px; border:1px solid var(--paper-line); }
+  .m-card .m-lbl{ font-size:10.5px; color:var(--muted); }
+  .m-card .m-num{ font-family:var(--mono); font-weight:600; font-size:17px; color:var(--wine); margin-top:6px; }
+  .m-chart{ margin-top:12px; background:#fff; border-radius:12px; padding:14px; border:1px solid var(--paper-line); }
+  .m-chart .bars{ display:flex; align-items:flex-end; gap:5px; height:70px; margin-top:10px; }
+  .m-chart .bars i{ flex:1; background:var(--brass); border-radius:3px 3px 0 0; opacity:.8; }
+  .m-list{ margin-top:12px; background:#fff; border-radius:12px; padding:12px 14px; border:1px solid var(--paper-line); }
+  .m-list .row{ display:flex; justify-content:space-between; font-size:12px; padding:7px 0; border-bottom:1px solid var(--paper-line); color:var(--ink-soft); }
+  .m-list .row:last-child{ border-bottom:none; }
+
+  /* feature grid */
+  .feature-grid{ margin-top:56px; display:grid; gap:1px; background:var(--paper-line); border:1px solid var(--paper-line); border-radius:var(--radius-md); overflow:hidden; grid-template-columns:1fr; }
+  @media (min-width:700px){ .feature-grid{ grid-template-columns:1fr 1fr; } }
+  .feature-item{ background:var(--paper); padding:26px 24px; }
+  .feature-item .f-icon{ width:34px; height:34px; border-radius:9px; background:var(--wine-pale); display:flex; align-items:center; justify-content:center; color:var(--wine); }
+  .feature-item h4{ font-size:16.5px; margin-top:16px; }
+  .feature-item p{ margin-top:8px; color:var(--muted); font-size:14.5px; }
+
+  /* before/after */
+  .ba-wrap{ margin-top:56px; display:grid; gap:0; border-radius:var(--radius-lg); overflow:hidden; grid-template-columns:1fr; border:1px solid var(--paper-line); }
+  @media (min-width:768px){ .ba-wrap{ grid-template-columns:1fr 1fr; } }
+  .ba-col{ padding:38px 32px; }
+  .ba-before{ background:var(--paper-dim); }
+  .ba-after{ background:var(--ink); color:var(--on-ink); }
+  .ba-col .ba-tag{ font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
+  .ba-before .ba-tag{ color:var(--muted); }
+  .ba-after .ba-tag{ color:var(--brass-light); }
+  .ba-col h4{ font-family:var(--serif); font-size:22px; margin-top:14px; }
+  .ba-col ul{ list-style:none; padding:0; margin:20px 0 0; display:flex; flex-direction:column; gap:12px; }
+  .ba-col li{ font-size:15px; padding-left:20px; position:relative; }
+  .ba-before li::before{ content:"×"; position:absolute; left:0; color:var(--muted-light); font-family:var(--mono); }
+  .ba-after li{ color:var(--on-ink-muted); }
+  .ba-after li::before{ content:"✓"; position:absolute; left:0; color:var(--brass-light); font-family:var(--mono); }
+
+  /* ---------- pricing ---------- */
+  .price-card{
+    margin-top:56px; max-width:560px; margin-left:auto; margin-right:auto;
+    background:var(--ink); color:var(--on-ink);
+    border-radius:var(--radius-lg); padding:44px 36px;
+    box-shadow:0 44px 90px -34px rgba(23,19,15,.5);
+    position:relative; overflow:hidden;
+  }
+  .price-card::before{
+    content:""; position:absolute; inset:0;
+    background:radial-gradient(60% 50% at 90% 0%, rgba(185,146,90,.18), transparent 60%);
+  }
+  .price-card > *{ position:relative; z-index:1; }
+  .price-card .p-name{ font-family:var(--serif); font-size:24px; }
+  .price-card .p-desc{ margin-top:10px; color:var(--on-ink-muted); font-size:14.5px; }
+  .price-row{ display:flex; align-items:baseline; gap:14px; margin-top:28px; flex-wrap:wrap; }
+  .price-old{ font-family:var(--mono); font-size:16px; color:var(--muted-light); text-decoration:line-through; }
+  .price-new{ font-family:var(--mono); font-weight:600; font-size:38px; color:var(--brass-light); }
+  .price-new sup{ font-size:16px; margin-right:2px; }
+  .price-note{ margin-top:6px; font-size:12.5px; color:var(--on-ink-muted); font-family:var(--mono); }
+  .price-includes{ margin:28px 0 0; list-style:none; padding:0; display:flex; flex-direction:column; gap:12px; }
+  .price-includes li{ display:flex; gap:10px; font-size:14.5px; color:var(--on-ink-muted); }
+  .price-includes li::before{ content:"—"; color:var(--brass-light); flex-shrink:0; }
+  .price-card .btn{ margin-top:32px; }
+  .price-foot{ margin-top:18px; font-size:12.5px; color:var(--on-ink-muted); text-align:center; }
+
+  /* ---------- IG ---------- */
+  .ig-card{
+    margin-top:52px; display:grid; gap:32px; align-items:center;
+    background:var(--paper); border:1px solid var(--paper-line); border-radius:var(--radius-lg);
+    padding:40px 34px; grid-template-columns:1fr;
+  }
+  @media (min-width:800px){ .ig-card{ grid-template-columns:auto 1fr auto; padding:40px; } }
+  .ig-avatar{
+    width:78px; height:78px; border-radius:50%;
+    background:linear-gradient(140deg, var(--wine), var(--brass));
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--serif); color:var(--on-ink); font-size:26px; font-weight:700;
+    flex-shrink:0;
+  }
+  .ig-body h4{ font-size:19px; }
+  .ig-body p{ margin-top:8px; color:var(--muted); font-size:14.5px; }
+  .ig-tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .ig-tags span{ font-family:var(--mono); font-size:11px; color:var(--wine); background:var(--wine-pale); padding:5px 10px; border-radius:100px; }
+
+  /* ---------- community ---------- */
+  .community-flow{ margin-top:52px; display:flex; flex-wrap:wrap; gap:0; align-items:center; }
+  .cf-step{ font-family:var(--mono); font-size:13px; padding:10px 18px; border:1px solid var(--paper-line); border-radius:100px; background:var(--paper); }
+  .cf-arrow{ padding:0 8px; color:var(--muted-light); }
+  .community-card{
+    margin-top:32px; background:var(--wine); color:var(--on-ink); border-radius:var(--radius-lg);
+    padding:36px 32px; display:grid; gap:24px;
+  }
+  @media (min-width:800px){ .community-card{ grid-template-columns:1fr auto; align-items:center; } }
+  .community-card h4{ font-size:22px; }
+  .community-card p{ margin-top:10px; color:rgba(243,239,230,.82); font-size:15px; max-width:52ch; }
+
+  /* ---------- FAQ ---------- */
+  .faq-list{ margin-top:52px; display:flex; flex-direction:column; gap:1px; background:var(--paper-line); border:1px solid var(--paper-line); border-radius:var(--radius-md); overflow:hidden; }
+  .faq-item{ background:var(--paper); }
+  .faq-q{
+    width:100%; text-align:left; background:none; border:none; cursor:pointer;
+    padding:22px 24px; display:flex; justify-content:space-between; align-items:center; gap:16px;
+    font-family:var(--sans); font-size:16px; font-weight:500; color:var(--ink);
+  }
+  .faq-q .plus{ font-family:var(--mono); font-size:20px; color:var(--wine); transition:transform .3s ease; flex-shrink:0; }
+  .faq-item.open .plus{ transform:rotate(45deg); }
+  .faq-a{ max-height:0; overflow:hidden; transition:max-height .4s var(--ease); }
+  .faq-a-inner{ padding:0 24px 22px; color:var(--muted); font-size:14.5px; max-width:64ch; }
+
+  /* ---------- final CTA ---------- */
+  .final-cta{ text-align:center; }
+  .final-cta h2{ font-size:clamp(28px,4.6vw,44px); line-height:1.4; max-width:16ch; margin:20px auto 0; }
+  .final-cta .desc{ margin:20px auto 0; max-width:50ch; color:var(--on-ink-muted); font-size:16.5px; }
+  .final-cta .btn-row{ display:flex; flex-wrap:wrap; justify-content:center; gap:14px; margin-top:36px; }
+
+  /* ---------- footer ---------- */
+  footer{ background:var(--ink); color:var(--on-ink-muted); padding:56px 0 110px; font-size:13.5px; }
+  @media (min-width:768px){ footer{ padding-bottom:56px; } }
+  .footer-grid{ display:flex; flex-direction:column; gap:28px; }
+  @media (min-width:768px){ .footer-grid{ flex-direction:row; justify-content:space-between; align-items:flex-end; } }
+  .footer-logo{ font-family:var(--serif); font-size:20px; color:var(--on-ink); }
+  .footer-links{ display:flex; gap:20px; flex-wrap:wrap; }
+  .footer-line{ margin-top:28px; padding-top:24px; border-top:1px solid rgba(243,239,230,.1); display:flex; flex-direction:column; gap:8px; }
+  @media (min-width:768px){ .footer-line{ flex-direction:row; justify-content:space-between; } }
+
+  /* ---------- sticky mobile cta ---------- */
+  .sticky-cta{
+    position:fixed; left:0; right:0; bottom:0; z-index:70;
+    background:rgba(23,19,15,.92);
+    backdrop-filter:blur(10px);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    display:flex; align-items:center; gap:12px;
+    transform:translateY(120%); transition:transform .4s var(--ease);
+    border-top:1px solid rgba(243,239,230,.1);
+  }
+  .sticky-cta.show{ transform:translateY(0); }
+  .sticky-cta .info{ flex:1; min-width:0; }
+  .sticky-cta .info .t{ font-family:var(--serif); font-size:14px; color:var(--on-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sticky-cta .info .p{ font-family:var(--mono); font-size:13px; color:var(--brass-light); margin-top:2px; }
+  .sticky-cta .btn{ padding:12px 20px; font-size:13.5px; flex-shrink:0; }
+  @media (min-width:900px){ .sticky-cta{ display:none; } }
+</style>
+</head>
+<body>
+
+<header class="site-nav" id="siteNav">
+  <a href="#hero" class="logo">CHAN<span>&#8217;</span>s Co.</a>
+  <nav class="nav-links">
+    <a href="#story">我的故事</a>
+    <a href="#system">變現系統</a>
+    <a href="#product">儀表板</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+  <a href="https://api.payuni.com.tw/api/uop/receive_info/2/1/HTCU1150201000353/MbjVYr1d9cIj43kRGyzy6" target="_blank" rel="noopener" class="btn btn-primary nav-cta">立即取得儀表板</a>
+</header>
+
+<!-- 01 HERO -->
+<section class="hero" id="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow on-ink">美業個人IP × 流量變現</span>
+      <h1>你不是沒有技術，<br>你只是還沒有讓「<em>你自己</em>」成為品牌。</h1>
+      <p class="sub">從靠技術接客，到靠個人IP讓客人主動找上門——這是我從護理師走到美業月變現的方法，也是我現在整理給你的系統。</p>
+    </div>
+
+    <div class="dash-card" aria-hidden="true">
+      <div class="dash-head"><span><span class="dash-dot"></span>美業每頁儀表板</span><span id="clock">Live</span></div>
+      <div class="dash-stats">
+        <div class="dash-stat">
+          <div class="label">本月營收</div>
+          <div class="num"><span class="counter" data-target="48600" data-prefix="$">$0</span></div>
+        </div>
+        <div class="dash-stat">
+          <div class="label">回購客數</div>
+          <div class="num"><span class="counter" data-target="37">0</span><small>人</small></div>
+        </div>
+        <div class="dash-stat">
+          <div class="label">客單價</div>
+          <div class="num"><span class="counter" data-target="2280" data-prefix="$">$0</span></div>
+        </div>
+        <div class="dash-stat">
+          <div class="label">回購率</div>
+          <div class="num"><span class="counter" data-target="61">0</span><small>%</small></div>
+        </div>
+      </div>
+      <div class="dash-bars" id="heroBars"></div>
+      <div class="dash-foot"><span>近 6 個月經營趨勢</span><span>更新中</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 PROBLEMS -->
+<section id="problems">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow">先說說現況</span>
+      <h2>你是不是也有這些情況？</h2>
+    </div>
+    <div class="problem-list reveal-stagger">
+      <div class="problem-item"><span class="mark">01</span><p>技術很好，但客人還是不穩定。</p></div>
+      <div class="problem-item"><span class="mark">02</span><p>IG 一直發作品，卻沒有太多人詢問。</p></div>
+      <div class="problem-item"><span class="mark">03</span><p>每次沒有客人的空檔，就開始焦慮。</p></div>
+      <div class="problem-item"><span class="mark">04</span><p>不知道自己到底應該拍什麼內容。</p></div>
+      <div class="problem-item"><span class="mark">05</span><p>客人總是只問價格，很難談價值。</p></div>
+      <div class="problem-item"><span class="mark">06</span><p>明明技術不差，卻永遠覺得別人比自己紅。</p></div>
+      <div class="problem-item"><span class="mark">07</span><p>一停下來服務客人，收入就跟著停止。</p></div>
+    </div>
+    <div class="problem-close reveal">
+      問題可能不是你的技術，而是你還沒有建立<strong>「個人品牌」</strong>——一個讓客人記得你、主動找你的理由。
+    </div>
+  </div>
+</section>
+
+<!-- 03 STORY -->
+<section class="section-dim" id="story">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow">我的故事</span>
+      <h2>我不是一開始就很厲害，我是一路做、一路試、一路踩坑走過來的。</h2>
+    </div>
+
+    <div class="timeline reveal">
+      <div class="t-item">
+        <div class="t-tag">Before</div>
+        <h4>護理師</h4>
+        <p>月薪大約 4～5 萬元，工作穩定，但收入完全綁在排班與工時上。</p>
+      </div>
+      <div class="t-item">
+        <div class="t-tag">Step 1</div>
+        <h4>19,800 元分期，加入一個品牌</h4>
+        <p>開始學著販售產品。這段期間我學到的不只是賣東西，而是引流、流量、消費者心理與成交這些底層邏輯。</p>
+      </div>
+      <div class="t-item">
+        <div class="t-tag">Step 2</div>
+        <h4>投入近 4 萬元，正式進入美業</h4>
+        <p>選擇霧唇美業，但我沒有把之前學到的流量與變現能力丟掉，而是直接把這套方法帶進美業。</p>
+      </div>
+      <div class="t-item highlight">
+        <div class="t-tag">Result</div>
+        <h4>3 個月內變現 100 位客人</h4>
+        <p>不是靠更厲害的技術，而是靠內容、信任與流量思維，讓客人願意主動找上門。</p>
+      </div>
+      <div class="t-item">
+        <div class="t-tag">Now</div>
+        <h4>從護理師月薪 4～5 萬，到美業單月收入 15 萬</h4>
+        <p>差別不是技術，是我開始把自己當成一個品牌在經營。</p>
+      </div>
+      <div class="t-item">
+        <div class="t-tag">Today</div>
+        <h4>把這套實戰經驗整理成方法</h4>
+        <p>分享給更多想脫離「只能靠雙手接客」的美業人。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 PROOF -->
+<section id="proof">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow">實戰成果</span>
+      <h2>不是理論，是我自己走過一次的數字。</h2>
+    </div>
+    <div class="proof-grid reveal-stagger">
+      <div class="proof-cell"><div class="num">4–5萬</div><div class="lbl">護理師時期月薪</div></div>
+      <div class="proof-cell"><div class="num">19,800</div><div class="lbl">第一筆投資，分期加入品牌</div></div>
+      <div class="proof-cell"><div class="num">100 人</div><div class="lbl">進入美業 3 個月內變現客數</div></div>
+      <div class="proof-cell"><div class="num">15萬</div><div class="lbl">美業單月最高收入</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 DIFFERENTIATION -->
+<section class="section-dim" id="different">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow">為什麼不一樣</span>
+      <h2>我教的不是「怎麼拍照」，而是「客人為什麼會選你」。</h2>
+    </div>
+
+    <div class="contrast-list reveal-stagger">
+      <div class="contrast-row">
+        <div class="contrast-cell no">只教你拍照</div>
+        <div class="contrast-cell yes">教你為什麼客人會被你的內容吸引</div>
+      </div>
+      <div class="contrast-row">
+        <div class="contrast-cell no">只教你發 Reels</div>
+        <div class="contrast-cell yes">教你如何利用內容建立信任</div>
+      </div>
+      <div class="contrast-row">
+        <div class="contrast-cell no">只教你追求觀看數</div>
+        <div class="contrast-cell yes">教你如何把流量轉成客人</div>
+      </div>
+      <div class="contrast-row">
+        <div class="contrast-cell no">只教你降價</div>
+        <div class="contrast-cell yes">教你站在消費者角度，設計客人能接受的價格</div>
+      </div>
+      <div class="contrast-row">
+        <div class="contrast-cell no">只教你賣服務</div>
+        <div class="contrast-cell yes">教你讓「你自己」成為品牌</div>
+      </div>
+    </div>
+
+    <div class="core-line reveal">
+      我不是要你成為一個<span class="strike">很會經營 IG</span> 的美業人。<br>
+      我要你成為一個「客人認識你，就想找你」的美業品牌。
+    </div>
+  </div>
+</section>
+
+<!-- 06 SYSTEM -->
+<section class="section-ink" id="system">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow on-ink">方法論</span>
+      <h2>美業IP變現系統</h2>
+      <p class="desc">六個階段，把「一個會技術的人」，變成「一個客人主動想找的品牌」。</p>
+    </div>
+
+    <div class="stage-grid reveal-stagger">
+      <div class="stage-card"><div class="stage-num">01 / 定位</div><h4>定位</h4><p>找到你是誰，以及客人為什麼要記住你。</p></div>
+      <div class="stage-card"><div class="stage-num">02 / 內容</div><h4>內容</h4><p>不只是發作品，而是開始讓內容建立你的個性、專業與價值。</p></div>
+      <div class="stage-card"><div class="stage-num">03 / 流量</div><h4>流量</h4><p>讓陌生人看見你。</p></div>
+      <div class="stage-card"><div class="stage-num">04 / 信任</div><h4>信任</h4><p>讓陌生人從「看看而已」變成「我想認識她」。</p></div>
+      <div class="stage-card"><div class="stage-num">05 / 轉換</div><h4>轉換</h4><p>理解消費者心理，設計客人願意接受的產品、服務與價格。</p></div>
+      <div class="stage-card"><div class="stage-num">06 / 變現</div><h4>變現</h4><p>把流量真正轉換成詢問、預約、成交與收入。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 OUTCOMES -->
+<section class="section-ink" id="outcomes">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow on-ink">你會得到</span>
+      <h2>走完這套系統，你會開始不一樣。</h2>
+    </div>
+    <div class="outcome-grid reveal-stagger">
+      <div class="outcome-item"><span class="chk"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#F3EFE6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><p>清楚自己的定位，不再模仿別人的內容。</p></div>
+      <div class="outcome-item"><span class="chk"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#F3EFE6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><p>知道每一則內容為什麼要發、要說什麼。</p></div>
+      <div class="outcome-item"><span class="chk"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#F3EFE6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><p>看得懂陌生流量、詢問到成交之間發生了什麼事。</p></div>
+      <div class="outcome-item"><span class="chk"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#F3EFE6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><p>不再只用降價來留住客人。</p></div>
+      <div class="outcome-item"><span class="chk"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#F3EFE6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><p>用數字看懂自己的經營狀況，而不是靠感覺。</p></div>
+      <div class="outcome-item"><span class="chk"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#F3EFE6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><p>開始建立一個就算暫停服務，也還在累積的個人品牌。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 PRODUCT INTRO -->
+<section class="section-dim" id="product">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow">產品</span>
+      <h2>美業每頁儀表板</h2>
+    </div>
+
+    <div class="product-hero">
+      <div class="product-copy reveal">
+        <span class="tag">經營工具</span>
+        <h3>這不是一個 Excel，是一個能讓你看懂自己美業事業的儀表板。</h3>
+        <p>技術學再多，如果看不懂自己的營收從哪裡來、客人為什麼回購、每個月到底賺不賺錢，你就永遠只能憑感覺經營。</p>
+        <p>「美業每頁儀表板」把經營一間美業事業會用到的所有數字，整理成一個打開就能看懂的工具——不用懂 Excel 公式，不用自己設計表格。</p>
+        <div class="hero-ctas" style="margin-top:8px;">
+          <a href="https://api.payuni.com.tw/api/uop/receive_info/2/1/HTCU1150201000353/MbjVYr1d9cIj43kRGyzy6" target="_blank" rel="noopener" class="btn btn-primary">立即取得我的美業儀表板</a>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <div class="mockup-phone">
+          <div class="mockup-screen">
+            <div class="m-head">美業每頁儀表板</div>
+            <div class="m-title">本月經營總覽</div>
+            <div class="mockup-cards">
+              <div class="m-card"><div class="m-lbl">本月營收</div><div class="m-num">$48,600</div></div>
+              <div class="m-card"><div class="m-lbl">新客／回購</div><div class="m-num">9 / 37</div></div>
+            </div>
+            <div class="m-chart">
+              <div class="m-lbl">近 6 個月營收趨勢</div>
+              <div class="bars" id="mockupBars"></div>
+            </div>
+            <div class="m-list">
+              <div class="row"><span>客單價</span><span>$2,280</span></div>
+              <div class="row"><span>回購率</span><span>61%</span></div>
+              <div class="row"><span>本月目標達成</span><span>82%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow">功能展示</span>
+      <h2>打開儀表板，你可以看懂的事</h2>
+      <p class="desc">實際功能以你收到的儀表板內容為準，以下為使用情境示意。</p>
+    </div>
+    <div class="feature-grid reveal-stagger">
+      <div class="feature-item">
+        <div class="f-icon">$</div>
+        <h4>營收管理</h4>
+        <p>每一筆收入去哪了、來自哪個服務項目，一目了然。</p>
+      </div>
+      <div class="feature-item">
+        <div class="f-icon">◔</div>
+        <h4>客戶管理</h4>
+        <p>誰是你的客人、上次消費是什麼時候，不用再翻對話紀錄。</p>
+      </div>
+      <div class="feature-item">
+        <div class="f-icon">▤</div>
+        <h4>預約管理</h4>
+        <p>把預約狀況整理成清楚的節奏，不再靠記憶硬撐。</p>
+      </div>
+      <div class="feature-item">
+        <div class="f-icon">↗</div>
+        <h4>業績追蹤</h4>
+        <p>每月、每週的業績變化，用數字看見，不用靠猜。</p>
+      </div>
+      <div class="feature-item">
+        <div class="f-icon">≈</div>
+        <h4>客單價分析</h4>
+        <p>了解自己的平均客單價，作為調整服務與定價的依據。</p>
+      </div>
+      <div class="feature-item">
+        <div class="f-icon">↺</div>
+        <h4>回購／客戶經營</h4>
+        <p>看懂哪些客人會回購、回購率如何，把力氣花在對的地方。</p>
+      </div>
+      <div class="feature-item">
+        <div class="f-icon">▦</div>
+        <h4>每月經營檢視</h4>
+        <p>每個月固定回顧一次，知道自己這個月到底發生了什麼事。</p>
+      </div>
+      <div class="feature-item">
+        <div class="f-icon">✦</div>
+        <h4>個人目標追蹤</h4>
+        <p>設定屬於自己的經營目標，並持續追蹤進度。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 BEFORE / AFTER -->
+<section class="section-dim" id="value">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow">為什麼值得</span>
+      <h2>如果你自己整理，要花的不只是錢，是時間。</h2>
+      <p class="desc">建立表格、設計公式、分類統計——這些我都已經先幫你做完了。</p>
+    </div>
+    <div class="ba-wrap reveal">
+      <div class="ba-col ba-before">
+        <span class="ba-tag">Before / 以前</span>
+        <h4>資料散落各處</h4>
+        <ul>
+          <li>營收記在記事本，客資存在手機聯絡人</li>
+          <li>對話紀錄散落在 LINE，找一筆訂單要翻半天</li>
+          <li>想做 Excel，卻不知道公式怎麼設</li>
+          <li>月底想檢討，卻拼不出完整數字</li>
+        </ul>
+      </div>
+      <div class="ba-col ba-after">
+        <span class="ba-tag">After / 現在</span>
+        <h4>打開儀表板就懂</h4>
+        <ul>
+          <li>營收、客戶、預約，全部在同一個地方</li>
+          <li>打開就能看懂本月經營狀況</li>
+          <li>不用會 Excel，不用自己設計公式</li>
+          <li>每個月固定檢視，經營越來越有方向</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08b PRICING -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="head-block reveal" style="margin:0 auto; text-align:center; max-width:520px;">
+      <span class="eyebrow" style="justify-content:center;">開始使用</span>
+      <h2>如果你已經不想再靠感覺經營，是時候開始看懂自己的數字。</h2>
+    </div>
+
+    <div class="price-card reveal">
+      <span class="tag" style="background:rgba(185,146,90,.16); color:var(--brass-light);">限量早鳥・前 10 位</span>
+      <div class="p-name" style="margin-top:14px;">美業每頁儀表板</div>
+      <p class="p-desc">一套幫助美業人管理營收、客戶、預約與目標的經營儀表板。</p>
+
+      <div class="price-row">
+        <span class="price-new"><sup>NT$</sup>999</span>
+      </div>
+      <div class="price-note">前 10 位早鳥價 NT$999，額滿後恢復原價 NT$1,299</div>
+
+      <ul class="price-includes">
+        <li>美業每頁儀表板完整檔案</li>
+        <li>使用說明與設定教學</li>
+        <li>購買後即時取得下載連結</li>
+        <li>後續功能更新通知</li>
+      </ul>
+
+      <a href="https://api.payuni.com.tw/api/uop/receive_info/2/1/HTCU1150201000353/MbjVYr1d9cIj43kRGyzy6" target="_blank" rel="noopener" class="btn btn-brass btn-block">立即取得我的美業儀表板</a>
+      <div class="price-foot">購買即代表你同意下方使用說明與購買注意事項</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 IG -->
+<section class="section-dim" id="ig">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow">想先認識我？</span>
+      <h2>你可以先來我的 IG。</h2>
+    </div>
+    <div class="ig-card reveal">
+      <div class="ig-avatar">陳</div>
+      <div class="ig-body">
+        <h4>@chan1201_</h4>
+        <p>我會在這裡分享美業經營、個人 IP、流量、變現，還有我一路走來的真實創業經驗與實戰方法。</p>
+        <div class="ig-tags">
+          <span>#美業經營</span><span>#個人IP</span><span>#流量變現</span><span>#真實創業</span>
+        </div>
+      </div>
+      <a href="https://www.instagram.com/chan1201_?igsh=MTc2bnJpazRtM2Fsbg%3D%3D&utm_source=qr" target="_blank" rel="noopener" class="btn btn-ghost">追蹤我</a>
+    </div>
+  </div>
+</section>
+
+<!-- 13 FAQ -->
+<section class="section-dim" id="faq">
+  <div class="wrap">
+    <div class="head-block reveal">
+      <span class="eyebrow">常見問題</span>
+      <h2>FAQ</h2>
+    </div>
+    <div class="faq-list reveal-stagger">
+      <div class="faq-item">
+        <button class="faq-q">購買後多久可以拿到儀表板？<span class="plus">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">完成付款後，你會立即收到下載連結與使用說明，可以馬上開始使用。</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">我完全不會用 Excel 或 Google 試算表，可以用嗎？<span class="plus">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">可以。儀表板已經把公式與分類都設計好，你只需要照著使用說明填入自己的資料即可。</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">這個儀表板適合剛開始接客、還沒有很多客人的人嗎？<span class="plus">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">適合。越早開始記錄與追蹤自己的經營數字，之後在調整定位、內容與價格時就越有依據。</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">可以退款嗎？<span class="plus">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">由於是數位商品，購買後即可取得完整內容，請於購買前確認產品內容是否符合需求。實際退款條件請依購買頁最終公告版本為準。</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">未來會更新功能嗎？<span class="plus">+</span></button>
+        <div class="faq-a"><div class="faq-a-inner">會。儀表板會持續優化，購買後的更新會另行通知。</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">CHAN's Co. <span style="font-family:var(--sans); font-size:13px; color:var(--on-ink-muted); font-weight:400;">・闆闆小陳</span></div>
+        <p style="margin-top:10px; max-width:36ch;">美業個人IP × 流量變現。把實戰經驗整理成方法，分享給更多美業人。</p>
+      </div>
+    </div>
+    <div class="footer-line">
+      <span>© 2026 闆闆小陳・美業每頁儀表板</span>
+      <span>使用說明．購買注意事項．退款條款請於購買頁確認</span>
+    </div>
+  </div>
+</footer>
+
+<div class="sticky-cta" id="stickyCta">
+  <div class="info">
+    <div class="t">美業每頁儀表板</div>
+    <div class="p">NT$999</div>
+  </div>
+  <a href="https://api.payuni.com.tw/api/uop/receive_info/2/1/HTCU1150201000353/MbjVYr1d9cIj43kRGyzy6" target="_blank" rel="noopener" class="btn btn-brass">立即取得</a>
+</div>
+
+<script>
+(function(){
+  // nav scroll state
+  var nav = document.getElementById('siteNav');
+  var sticky = document.getElementById('stickyCta');
+  var hero = document.getElementById('hero');
+  window.addEventListener('scroll', function(){
+    var y = window.scrollY || window.pageYOffset;
+    nav.classList.toggle('scrolled', y > 20);
+    sticky.classList.toggle('show', y > hero.offsetHeight * 0.8);
+  }, {passive:true});
+
+  // scroll reveal
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('is-in'); io.unobserve(e.target); }
+    });
+  }, {threshold:.15, rootMargin:'0px 0px -60px 0px'});
+  document.querySelectorAll('.reveal, .reveal-stagger').forEach(function(el){ io.observe(el); });
+  // safety net: never leave content permanently invisible if the observer misfires
+  setTimeout(function(){
+    document.querySelectorAll('.reveal, .reveal-stagger').forEach(function(el){ el.classList.add('is-in'); });
+  }, 2500);
+
+  // counters
+  function animateCounter(el){
+    var target = parseFloat(el.getAttribute('data-target'));
+    var prefix = el.getAttribute('data-prefix') || '';
+    var dur = 1400, start = null;
+    function step(ts){
+      if(!start) start = ts;
+      var p = Math.min((ts-start)/dur, 1);
+      var eased = 1 - Math.pow(1-p, 3);
+      var val = Math.round(target * eased);
+      el.textContent = prefix + val.toLocaleString('en-US');
+      if(p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  var counterIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ animateCounter(e.target); counterIo.unobserve(e.target); }
+    });
+  }, {threshold:.4});
+  document.querySelectorAll('.counter').forEach(function(el){ counterIo.observe(el); });
+
+  // hero bars + mockup bars
+  function buildBars(container, n, min, max){
+    if(!container) return;
+    for(var i=0;i<n;i++){
+      var bar = document.createElement('i');
+      var h = Math.round(min + Math.random()*(max-min));
+      bar.style.height = h + '%';
+      bar.style.animationDelay = (i*0.08) + 's';
+      container.appendChild(bar);
+    }
+  }
+  buildBars(document.getElementById('heroBars'), 12, 30, 100);
+  buildBars(document.getElementById('mockupBars'), 6, 40, 100);
+
+  // faq accordion
+  document.querySelectorAll('.faq-item').forEach(function(item){
+    var q = item.querySelector('.faq-q');
+    var a = item.querySelector('.faq-a');
+    q.addEventListener('click', function(){
+      var isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(function(o){
+        o.classList.remove('open');
+        o.querySelector('.faq-a').style.maxHeight = null;
+      });
+      if(!isOpen){
+        item.classList.add('open');
+        a.style.maxHeight = a.scrollHeight + 'px';
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
