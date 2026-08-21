@@ -119,36 +119,48 @@
   const SUPABASE_URL = "https://ocmeqwxccyqdafhrhhew.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jbWVxd3hjY3lxZGFmaHJoaGV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMjM0NDQsImV4cCI6MjEwMjg5OTQ0NH0.xjxI6HArstlOPUlshUM-Zt9WV4C1bMaQO5winkGYexE";
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
   const form = document.getElementById("bookingForm");
   const msg = document.getElementById("msg");
   const submitBtn = document.getElementById("submitBtn");
 
+  let supabase;
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (initErr) {
+    msg.textContent = "初始化失敗：" + initErr.message;
+    msg.className = "err";
+  }
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     submitBtn.disabled = true;
-    msg.textContent = "";
+    msg.textContent = "送出中...";
     msg.className = "";
 
-    const { error } = await supabase.from("appointments").insert({
-      name: form.name.value.trim(),
-      phone: form.phone.value.trim(),
-      appointment_date: form.date.value,
-      appointment_time: form.time.value
-    });
+    try {
+      const { error } = await supabase.from("appointments").insert({
+        name: form.name.value.trim(),
+        phone: form.phone.value.trim(),
+        appointment_date: form.date.value,
+        appointment_time: form.time.value
+      });
 
-    if (error) {
-      msg.textContent = "送出失敗，請稍後再試一次。";
+      if (error) {
+        msg.textContent = "送出失敗：" + error.message;
+        msg.className = "err";
+        submitBtn.disabled = false;
+        return;
+      }
+
+      msg.textContent = "預約成功！我們會盡快與你聯絡確認。";
+      msg.className = "ok";
+      form.reset();
+      submitBtn.disabled = false;
+    } catch (err) {
+      msg.textContent = "發生錯誤：" + err.message;
       msg.className = "err";
       submitBtn.disabled = false;
-      return;
     }
-
-    msg.textContent = "預約成功！我們會盡快與你聯絡確認。";
-    msg.className = "ok";
-    form.reset();
-    submitBtn.disabled = false;
   });
 </script>
 </body>
