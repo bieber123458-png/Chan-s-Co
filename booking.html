@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --ink:#17130F;
@@ -123,14 +122,6 @@
   const msg = document.getElementById("msg");
   const submitBtn = document.getElementById("submitBtn");
 
-  let supabase;
-  try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  } catch (initErr) {
-    msg.textContent = "初始化失敗：" + initErr.message;
-    msg.className = "err";
-  }
-
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     submitBtn.disabled = true;
@@ -138,15 +129,25 @@
     msg.className = "";
 
     try {
-      const { error } = await supabase.from("appointments").insert({
-        name: form.name.value.trim(),
-        phone: form.phone.value.trim(),
-        appointment_date: form.date.value,
-        appointment_time: form.time.value
+      const res = await fetch(SUPABASE_URL + "/rest/v1/appointments", {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({
+          name: form.name.value.trim(),
+          phone: form.phone.value.trim(),
+          appointment_date: form.date.value,
+          appointment_time: form.time.value
+        })
       });
 
-      if (error) {
-        msg.textContent = "送出失敗：" + error.message;
+      if (!res.ok) {
+        const text = await res.text();
+        msg.textContent = "送出失敗：" + text;
         msg.className = "err";
         submitBtn.disabled = false;
         return;
