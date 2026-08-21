@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>線上預約｜CHAN's Co.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --ink:#17130F;
+    --paper:#F7F3EC;
+    --paper-dim:#EFE8DA;
+    --wine:#6E2A3B;
+    --wine-light:#8C3F52;
+    --brass:#B9925A;
+    --muted:#6B645C;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:"Noto Sans TC","PingFang TC",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .card{
+    width:100%;
+    max-width:440px;
+    background:#fff;
+    border-radius:var(--radius);
+    padding:32px 28px;
+    box-shadow:0 8px 30px rgba(23,19,15,0.08);
+  }
+  h1{
+    font-size:1.4rem;
+    margin:0 0 6px;
+  }
+  p.sub{
+    color:var(--muted);
+    margin:0 0 24px;
+    font-size:0.92rem;
+  }
+  label{
+    display:block;
+    font-size:0.88rem;
+    font-weight:600;
+    margin:16px 0 6px;
+  }
+  input{
+    width:100%;
+    padding:11px 12px;
+    border:1px solid var(--paper-dim);
+    border-radius:8px;
+    font-size:1rem;
+    font-family:inherit;
+    background:var(--paper);
+  }
+  input:focus{
+    outline:2px solid var(--wine-light);
+    outline-offset:1px;
+  }
+  button{
+    width:100%;
+    margin-top:24px;
+    padding:13px;
+    background:var(--wine);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    font-size:1rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  button:disabled{
+    opacity:0.6;
+    cursor:not-allowed;
+  }
+  #msg{
+    margin-top:16px;
+    font-size:0.9rem;
+    text-align:center;
+    min-height:1.2em;
+  }
+  #msg.ok{ color:#2f7a4f; }
+  #msg.err{ color:var(--wine); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>線上預約</h1>
+    <p class="sub">請填寫以下資料，我們會盡快與你確認預約。</p>
+    <form id="bookingForm">
+      <label for="name">姓名</label>
+      <input id="name" name="name" type="text" required autocomplete="name">
+
+      <label for="phone">電話</label>
+      <input id="phone" name="phone" type="tel" required autocomplete="tel">
+
+      <label for="date">預約日期</label>
+      <input id="date" name="date" type="date" required>
+
+      <label for="time">預約時間</label>
+      <input id="time" name="time" type="time" required>
+
+      <button type="submit" id="submitBtn">送出預約</button>
+      <div id="msg"></div>
+    </form>
+  </div>
+
+<script>
+  const SUPABASE_URL = "https://ocmeqwxccyqdafhrhhew.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jbWVxd3hjY3lxZGFmaHJoaGV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMjM0NDQsImV4cCI6MjEwMjg5OTQ0NH0.xjxI6HArstlOPUlshUM-Zt9WV4C1bMaQO5winkGYexE";
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const form = document.getElementById("bookingForm");
+  const msg = document.getElementById("msg");
+  const submitBtn = document.getElementById("submitBtn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    msg.textContent = "";
+    msg.className = "";
+
+    const { error } = await supabase.from("appointments").insert({
+      name: form.name.value.trim(),
+      phone: form.phone.value.trim(),
+      appointment_date: form.date.value,
+      appointment_time: form.time.value
+    });
+
+    if (error) {
+      msg.textContent = "送出失敗，請稍後再試一次。";
+      msg.className = "err";
+      submitBtn.disabled = false;
+      return;
+    }
+
+    msg.textContent = "預約成功！我們會盡快與你聯絡確認。";
+    msg.className = "ok";
+    form.reset();
+    submitBtn.disabled = false;
+  });
+</script>
+</body>
+</html>
