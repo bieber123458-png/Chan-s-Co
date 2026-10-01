@@ -14,12 +14,12 @@ export function AiNotice() {
     return (
       <div className="notice warn">
         目前是<strong>網頁版</strong>：AI 功能無法使用，資料只存在這個瀏覽器（換裝置看不到，請定期在「設定與備份」下載備份）。
-        要用 AI、跨裝置同步，請打開 <a href={CLAUDE_VERSION_URL} target="_blank" rel="noreferrer">Claude 版</a>（需登入 Claude）。
+        要用 AI、跨裝置同步：到「設定與備份」連接 AI 主機，或打開 <a href={CLAUDE_VERSION_URL} target="_blank" rel="noreferrer">Claude 版</a>。
       </div>
     );
   }
   if (!status?.aiConfigured) {
-    return <div className="notice warn"><strong>AI 尚未設定。</strong>請在伺服器的環境變數設定 <code>ANTHROPIC_API_KEY</code> 後重新啟動，AI 建議才會真正運作。其他功能可以正常使用。</div>;
+    return <div className="notice warn"><strong>AI 尚未設定。</strong>請在主機（Cloudflare 或伺服器）設定 <code>ANTHROPIC_API_KEY</code>，AI 建議才會運作。其他功能可以正常使用。</div>;
   }
   return null;
 }

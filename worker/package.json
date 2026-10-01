@@ -1,0 +1,16 @@
+{
+  "name": "xiaochen-ai-backend",
+  "private": true,
+  "type": "module",
+  "description": "小陳的每月經營系統：Cloudflare 後端（登入、雲端資料、AI）",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

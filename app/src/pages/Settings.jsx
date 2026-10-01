@@ -4,6 +4,47 @@ import { PageHead, Card, Field, Confirm } from '../components/ui.jsx';
 import { COLLECTIONS } from '../lib/collections.js';
 import { toDateStr } from '../lib/plan.js';
 import { cleanIgHandle } from '../lib/stats.js';
+import { detectBackend, getApiBase, setApiBase } from '../lib/api.js';
+
+// 連接 Cloudflare 後端：讓 GitHub 網頁版也能登入、同步資料、使用 AI
+function ConnectBackend() {
+  const { mode, toast } = useStore();
+  const base = getApiBase();
+  const [url, setUrl] = useState(base || '');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const connect = async () => {
+    const clean = url.trim().replace(/\/+$/, '');
+    if (!/^https?:\/\/[^\s]+$/.test(clean)) { setErr('請貼上完整網址，例如 https://xiaochen-system.你的帳號.workers.dev'); return; }
+    setBusy(true); setErr('');
+    const status = await detectBackend(clean);
+    setBusy(false);
+    if (!status) { setErr('連不到這個網址。請確認網址正確、後端已部署完成，並且 ALLOWED_ORIGINS 有包含這個網站。'); return; }
+    setApiBase(clean);
+    toast('已連接，請登入', 'success');
+    setTimeout(() => window.location.reload(), 600);
+  };
+
+  if (mode === 'cloud') return null;
+  if (mode === 'remote' && !base) return null;
+  return (
+    <Card title="連接 AI 主機（Cloudflare）">
+      {mode === 'remote' ? (
+        <>
+          <p className="small">已連接：<code>{base}</code>。資料存在雲端，手機和電腦登入同一個帳號都看得到。</p>
+          <button className="btn ghost sm mt" onClick={() => { setApiBase(null); window.location.reload(); }}>中斷連接，改用本機模式</button>
+        </>
+      ) : (
+        <>
+          <p className="small muted mb">部署好 Cloudflare 後端後，把它的網址貼在這裡，這個網頁就能使用 AI 教練，資料也會存到雲端。連接後要登入；目前這個瀏覽器裡的資料不會自動搬過去，請先下載 JSON 備份，登入後再從備份還原。</p>
+          <Field label="後端網址" error={err}><input id="api-base" className="input" placeholder="https://xiaochen-system.你的帳號.workers.dev" value={url} onChange={(e) => setUrl(e.target.value)} /></Field>
+          <button className="btn" disabled={busy} onClick={connect}>{busy ? <span className="spinner" /> : null}測試並連接</button>
+        </>
+      )}
+    </Card>
+  );
+}
 
 const CSV_SETS = {
   transactions: ['收支紀錄', ['date', 'type', 'category', 'amount', 'note']],
@@ -83,9 +124,11 @@ export default function Settings() {
         <button className="btn" onClick={saveProfile}>儲存設定</button>
       </Card>
 
+      <ConnectBackend />
+
       <Card title="資料儲存與 AI 狀態">
         {mode === 'remote' ? (
-          <div className="notice ok small">資料儲存在伺服器的 SQLite 資料庫（帳號：{user?.username}）。換裝置、換瀏覽器登入同一個帳號都能看到相同資料。</div>
+          <div className="notice ok small">資料儲存在{status?.storage === 'cloudflare' ? ' Cloudflare 雲端' : '伺服器的 SQLite 資料庫'}（帳號：{user?.username}）。換裝置、換瀏覽器登入同一個帳號都能看到相同資料。</div>
         ) : mode === 'cloud' ? (
           <div className="notice ok small"><strong>Claude 雲端模式：</strong>資料存在這個頁面的 Claude 雲端，放在只有你看得到的私人區。用同一個 Claude 帳號在手機或電腦打開這個連結，都會看到相同資料。就算把連結分享給別人，對方也看不到你的資料。</div>
         ) : (

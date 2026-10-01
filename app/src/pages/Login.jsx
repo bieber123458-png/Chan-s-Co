@@ -29,7 +29,7 @@ export default function Login({ status, onDone }) {
       <form className="card login-card" onSubmit={submit}>
         <div className="eyebrow">MONTHLY · GROW YOUR BUSINESS</div>
         <h1 style={{ fontSize: 24, color: 'var(--tea-dark)', marginTop: 4 }}>小陳的每月經營系統</h1>
-        <p className="muted small mt">{isRegister ? '建立你的帳號，資料會安全保存在伺服器資料庫，換裝置登入也看得到。' : '登入後繼續你的每月經營計畫。'}</p>
+        <p className="muted small mt">{isRegister ? '第一次使用請建立帳號（只有第一個帳號能建立，之後就只有你能登入）。資料存在雲端，換裝置登入也看得到。' : '登入後繼續你的每月經營計畫。'}</p>
         <div className="field mt">
           <label htmlFor="u">帳號</label>
           <input id="u" className="input" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} />

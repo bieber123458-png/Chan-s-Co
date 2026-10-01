@@ -82,6 +82,10 @@ npm run dev               # 前端 http://localhost:5173，API 自動轉到 8787
 
 發布成 claude.ai 頁面時，系統自動改用 Claude 雲端：資料存在頁面資料庫裡只有本人看得到的私人區（跨裝置同步），AI 透過本人的 Claude 帳號回答（第一次使用會詢問是否允許，用量算在 Claude 方案內），備份透過平台的下載確認視窗。程式在 `src/lib/cloud.js`，提示詞與伺服器版共用 `src/lib/prompts.js`。
 
+### GitHub 網頁版＋Cloudflare 後端（AI 與雲端同步）
+
+`system/` 是 GitHub Pages 上的網頁版（<https://bieber123458-png.github.io/Chan-s-Co/system/>）。`worker/` 是給它用的 Cloudflare 後端（登入、雲端資料、AI），部署步驟見 [worker/DEPLOY.md](../worker/DEPLOY.md)。部署後在網頁版「設定與備份 → 連接 AI 主機」貼上後端網址即可。
+
 ### 沒有後端時（本機模式）
 
 如果只把 `dist/` 當靜態網頁開啟（例如 GitHub Pages），系統會自動切換成**本機模式**：資料存在瀏覽器 localStorage，畫面會清楚提示。限制：AI 無法使用、資料只在該瀏覽器、清除瀏覽器資料就會消失、無法跨裝置同步。請定期匯出備份。

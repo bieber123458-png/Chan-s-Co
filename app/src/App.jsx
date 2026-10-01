@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { detectBackend, remote, local, getToken, setToken } from './lib/api.js';
+import { detectBackend, remote, local, getToken, setToken, getApiBase, setApiBase } from './lib/api.js';
 import { StoreProvider, useStore } from './lib/store.jsx';
 import { connectCloud } from './lib/cloud.js';
 import Login from './pages/Login.jsx';
@@ -112,6 +112,10 @@ export default function App() {
   const boot = useCallback(async () => {
     setState({ phase: 'loading' });
     const status = await detectBackend();
+    if (!status && getApiBase()) {
+      setState({ phase: 'error', message: `連不到 AI 主機（${getApiBase()}）。請確認網路，或稍後再試。`, apiDown: true });
+      return;
+    }
     if (!status) {
       // 在 claude.ai 打開時，改用 Claude 雲端（資料跟著 Claude 帳號、AI 用自己的 Claude 帳號）
       const cloud = await connectCloud().catch(() => null);
@@ -150,7 +154,7 @@ export default function App() {
   let body;
   if (state.phase === 'loading') body = <div className="loading-page"><div className="row"><span className="spinner" /> 載入中…（第一次開啟可能需要幾秒）</div></div>;
   else if (state.phase === 'error') body = (
-    <div className="login-wrap"><div className="card login-card"><h2>載入失敗</h2><p className="mt">{state.message}</p><button className="btn mt" onClick={boot}>重新載入</button></div></div>
+    <div className="login-wrap"><div className="card login-card"><h2>載入失敗</h2><p className="mt">{state.message}</p><div className="row mt"><button className="btn" onClick={boot}>重新載入</button>{state.apiDown && <button className="btn ghost" onClick={() => { setApiBase(null); boot(); }}>先用本機模式</button>}</div></div></div>
   );
   else if (state.phase === 'login') body = <Login status={state.status} onDone={(token) => { setToken(token); boot(); }} />;
   else body = (

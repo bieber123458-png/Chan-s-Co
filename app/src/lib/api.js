@@ -8,6 +8,11 @@ const safeGet = (k) => { try { return localStorage.getItem(k); } catch { return 
 const safeSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch { return false; } };
 const safeDel = (k) => { try { localStorage.removeItem(k); } catch { /* ignore */ } };
 
+// 後端網址：同一個網站（自己的伺服器）留空；GitHub Pages 版連到 Cloudflare 後端時填完整網址
+const API_BASE_KEY = 'xc30-api-base';
+export const getApiBase = () => String(safeGet(API_BASE_KEY) || import.meta.env?.VITE_API_BASE || '').replace(/\/+$/, '');
+export const setApiBase = (v) => (v ? safeSet(API_BASE_KEY, String(v).trim().replace(/\/+$/, '')) : safeDel(API_BASE_KEY));
+
 export const getToken = () => safeGet(TOKEN_KEY);
 export const setToken = (t) => (t ? safeSet(TOKEN_KEY, t) : safeDel(TOKEN_KEY));
 
@@ -21,7 +26,7 @@ export class ApiError extends Error {
 async function request(method, url, body) {
   let res;
   try {
-    res = await fetch(url, {
+    res = await fetch(getApiBase() + url, {
       method,
       headers: { 'Content-Type': 'application/json', ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -36,9 +41,9 @@ async function request(method, url, body) {
 }
 
 // 偵測是否有後端可用
-export async function detectBackend() {
+export async function detectBackend(base = getApiBase()) {
   try {
-    const res = await fetch('/api/status');
+    const res = await fetch(`${base}/api/status`);
     if (!res.ok) return null;
     const json = await res.json();
     return json?.ok ? json : null;

@@ -1,0 +1,22 @@
+# 小陳的每月經營系統 — Cloudflare 後端設定
+# 部署步驟見 DEPLOY.md。AI 金鑰不要寫在這裡，請在 Cloudflare 後台新增 Secret：ANTHROPIC_API_KEY
+name = "xiaochen-system"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# 允許呼叫這個後端的網站（GitHub Pages 網址），多個用逗號分隔
+ALLOWED_ORIGINS = "https://bieber123458-png.github.io"
+AI_MODEL = "claude-opus-5-5"
+# 第一個帳號建立後就關閉註冊，別人無法註冊使用你的 AI 額度
+ALLOW_REGISTRATION = "false"
+
+# 資料存在 Durable Object 內建的 SQLite，部署時自動建立
+[[durable_objects.bindings]]
+name = "STORE"
+class_name = "Store"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Store"]
