@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { CATEGORIES, PRIORITIES, dayOfDate, dateOfDay, toDateStr, addDays } from '../src/lib/plan.js';
 import { monthlySummary, debtStatus, goalProgress, avgEssential, STRATEGIES, TX_TYPES } from '../src/lib/finance.js';
 import { DEFAULT_SETTINGS } from '../src/lib/stats.js';
+import { FRAMEWORKS, CAROUSEL_STYLES, CAROUSEL_SPEC, STORY_TYPES, storyMetrics, COMPLIANCE_NOTE } from '../src/lib/copy.js';
 
 export const AI_MODEL = process.env.AI_MODEL || 'claude-opus-5-5';
 export const aiConfigured = () => !!process.env.ANTHROPIC_API_KEY;
@@ -30,6 +31,7 @@ const MODES = {
   improve: '幫我改善：針對使用者描述的做法，給出更好的具體版本（可以直接示範改寫）。',
   decide: '幫我做決策：列出選項、各自利弊與風險，最後給出你的建議與理由；若資訊不足先追問最關鍵的一點。',
   breakdown: '幫我拆解目標：把目標拆成本週、今天可以做的具體步驟，每步可衡量、時間合理。',
+  story: '限動顧問：從第一則開頭、整組節奏、互動貼紙、私訊互動、與 Reels 互相導流、發布時段等角度，給具體可照做的限動建議；有限動數據時引用數字。',
 };
 
 const COACH_FORMAT = `請依序回覆：
@@ -117,6 +119,20 @@ ${debts.join('\n') || '（沒有負債紀錄）'}
 ${goals.join('\n') || '（沒有存錢目標）'}`;
 }
 
+function storiesBlock(data) {
+  const snaps = [...(data.igSnapshots || [])].sort((a, b) => a.date.localeCompare(b.date));
+  const followers = snaps.length ? Number(snaps[snaps.length - 1].followers) : null;
+  const list = (data.stories || []).filter((s) => s.status !== 'planned').sort((a, b) => a.date.localeCompare(b.date)).slice(-30);
+  if (!list.length) return '\n## 限動數據\n（還沒有已發布的限動紀錄）';
+  const v = (x) => (x === '' || x == null ? '未填' : x);
+  return `\n## 限動數據（共 ${list.length} 組，使用者手動輸入${followers ? `；粉絲 ${followers}` : ''}）\n` + list.map((s) => {
+    const m = storyMetrics(s, followers);
+    return `- ${s.date}｜${s.slot || '時段未填'}｜${STORY_TYPES[s.type]?.name || s.type}｜${s.frameCount || s.frames?.length || '?'} 則｜貼紙：${s.sticker || '無'}｜開頭：${short(s.hook, 40)}｜第一則瀏覽 ${v(s.firstViews)}、最後一則 ${v(s.lastViews)}、貼紙互動 ${v(s.interactions)}、回覆 ${v(s.replies)}、分享 ${v(s.shares)}、連結點擊 ${v(s.linkClicks)}｜完成率 ${m.completion ?? '—'}%、互動率 ${m.engagement ?? '—'}%`;
+  }).join('\n');
+}
+
+const sectionsText = (list) => (list || []).map((x, i) => `${i + 1}. ${x.role || x.label}${x.layout ? `（版型：${x.layout}，字數上限 ${x.limit}）` : ''}：${x.text ? `我的想法「${x.text}」` : '（請你幫我寫）'}${x.sticker && x.sticker !== '無' ? `［貼紙：${x.sticker}］` : ''}`).join('\n');
+
 function postsBlock(data) {
   const posts = [...(data.posts || [])].sort((a, b) => a.date.localeCompare(b.date)).slice(-30);
   if (!posts.length) return '\n## 已發布內容數據\n（沒有任何內容數據）';
@@ -126,7 +142,7 @@ function postsBlock(data) {
 }
 
 // 依功能組出 system prompt 與訊息
-function build(kind, body, data, settings) {
+export function build(kind, body, data, settings) {
   const input = String(body.input || '').trim();
   const ctx = profileBlock(settings, data) + recentTasksBlock(data, settings);
   switch (kind) {
@@ -205,6 +221,80 @@ ${input}
 ### 留言互動問題（2 個）
 ### 延伸主題（3 個）
 ### 合規檢查（是否有食品減重功效等不能寫的說法；沒有就寫「未發現」）`}],
+      };
+    case 'copywrite': {
+      const fw = FRAMEWORKS[body.framework] || FRAMEWORKS.pain;
+      return {
+        label: '文案架構',
+        system: `${BASE}\n\n${ctx}${postsBlock(data)}${historyBlock(data)}`,
+        messages: [{ role: 'user', content: `請用「${fw.name}」架構幫我寫一份${body.format || '文案'}。
+主題：${body.topic || '未填'}
+我想講的重點：${input || '未填'}
+架構與我已寫的部分：
+${sectionsText(body.sections)}
+
+規則：保留我已寫的想法再潤飾；口語、像我本人在說話；${COMPLIANCE_NOTE}
+請回覆：
+### 完整文案（依架構分段，每段前標示段落名稱${body.format === 'Reels 腳本' ? '，並標註畫面與秒數' : ''}）
+### 開頭的另外 2 個版本
+### 說明文字與 3～5 個 hashtag
+### 合規檢查（沒有問題就寫「未發現」）`}],
+      };
+    }
+    case 'carousel': {
+      const st = CAROUSEL_STYLES[body.style] || CAROUSEL_STYLES.teach;
+      return {
+        label: '輪播規劃',
+        system: `${BASE}\n\n${ctx}${postsBlock(data)}${historyBlock(data)}`,
+        messages: [{ role: 'user', content: `請幫我規劃一組「${st.name}」輪播，共 ${body.pages?.length || '?'} 頁。
+主題：${body.topic || '未填'}
+我想講的重點：${input || '未填'}
+逐頁結構：
+${sectionsText(body.pages)}
+呈現規範：${CAROUSEL_SPEC.join('；')}
+規則：${COMPLIANCE_NOTE}
+
+請逐頁回覆，每頁格式：
+### 第 N 頁｜頁面角色
+- **大標題**：
+- **內文**：（遵守字數上限）
+- **版型與視覺**：（照片／圖示／顏色／排版位置，具體到可以照著做）
+最後加上：
+### 說明文字（含 CTA）
+### 封面標題另外 2 個版本
+### 合規檢查（沒有問題就寫「未發現」）`}],
+      };
+    }
+    case 'storyPlan': {
+      const type = STORY_TYPES[body.type] || STORY_TYPES.opinion;
+      return {
+        label: '限動規劃',
+        system: `${BASE}\n\n${ctx}${storiesBlock(data)}${historyBlock(data)}`,
+        messages: [{ role: 'user', content: `請幫我寫一組「${type.name}」限動。
+主題／今天想發的事：${body.topic || '未填'}
+目標：${body.goal || '提升觀看與互動'}
+補充：${input || '無'}
+逐則結構：
+${sectionsText(body.frames)}
+
+規則：第一則決定觀眾要不要往下看，要有臉或強烈畫面＋一句話；每則文字精簡，手機一眼看完；至少一則有互動貼紙；${COMPLIANCE_NOTE}
+請回覆：
+### 逐則內容（每則寫：畫面、文字、貼紙與貼紙上的字）
+### 建議發布時段（有數據就引用，沒有就說明資料不足）
+### 發完後要做的事（例如私訊投票的人）`}],
+      };
+    }
+    case 'storyPerformance':
+      return {
+        label: '限動數據分析',
+        system: `${BASE}\n\n${profileBlock(settings, data)}${storiesBlock(data)}${historyBlock(data)}`,
+        messages: [{ role: 'user', content: `請分析我的限動表現。${input ? `\n我想特別知道：${input}` : ''}
+規則：同一類型少於 3 組時，要說明樣本太少、不能下結論。
+請回覆：
+### 資料是否足夠
+### 看的人比較多的限動有什麼共同點
+### 完成率與互動率的問題
+### 下週限動的具體調整（類型、開頭、貼紙、時段，最多三項）`}],
       };
     case 'postPerformance':
       return {

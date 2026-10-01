@@ -5,6 +5,7 @@ import RecordForm, { blankFrom } from '../components/RecordForm.jsx';
 import { AiNotice, AiPanel, AiResult } from '../components/AiPanel.jsx';
 import { fmtNum, fmtShortDate } from '../lib/format.js';
 import { sum } from '../lib/finance.js';
+import { CopyStudio, CarouselStudio, Drafts, newCopyDraft, newCarouselDraft } from '../components/Studio.jsx';
 
 export const FORMATS = ['Reels', '輪播', '限動', '貼文'];
 export const TOPICS = ['美業經營錯誤', 'IG 首頁定位', '價目表', '限動經營', '客人為何選擇你', '成交溝通', '經營思維', '個人故事', '免費模板導流', '減脂日常', '吃東西／美食', '接軌（美業×生活）', '旅遊生活', '產品評價', '其他'];
@@ -21,7 +22,7 @@ const POST_FIELDS = [
   { key: 'comments', label: '留言', type: 'number' },
   { key: 'follows', label: '新增追蹤', type: 'number' },
   { key: 'leads', label: '免費資源導流（領取／私訊數）', type: 'number' },
-  { key: 'stickers', label: '限動互動數（投票／問答／回覆）', type: 'number', hint: '限動才需要填' },
+  { key: 'stickers', label: '限動互動數（投票／問答／回覆）', type: 'number', hint: '限動建議改到「限動經營」記錄，可看完成率與互動率' },
   { key: 'notes', label: '備註（例如：開頭用了什麼、發布時段）', type: 'textarea', rows: 2 },
 ];
 
@@ -151,19 +152,27 @@ function Performance() {
 }
 
 export default function Content({ go }) {
-  const { settings } = useStore();
-  const [tab, setTab] = useState('analyze');
+  const { settings, data } = useStore();
+  const [tab, setTab] = useState('copy');
+  const [copyDraft, setCopyDraft] = useState(newCopyDraft);
+  const [carouselDraft, setCarouselDraft] = useState(newCarouselDraft);
+  const openDraft = (x) => {
+    if (x.kind === 'carousel') { setCarouselDraft(x); setTab('carousel'); } else { setCopyDraft(x); setTab('copy'); }
+  };
   return (
     <>
-      <PageHead eyebrow="CONTENT ADVISOR" title="AI 社群內容顧問" desc="寫內容前先健檢，發布後記錄數據，再根據真實表現決定下一篇。" />
+      <PageHead eyebrow="CONTENT ADVISOR" title="AI 社群內容顧問" desc="先用架構寫文案、規劃輪播，發布前健檢，發布後記錄數據，再根據真實表現決定下一篇。限動請到「限動經營」。" />
       <AiNotice />
       <div className="notice info small">
         {settings.igHandle
           ? <>經營帳號：<a href={`https://www.instagram.com/${settings.igHandle}/`} target="_blank" rel="noreferrer">@{settings.igHandle}</a>。{settings.igPositioning ? `定位：${settings.igPositioning}` : <>還沒填寫帳號定位，<a href="#/settings" onClick={(e) => { e.preventDefault(); go('settings'); }}>到設定補上</a>，AI 判斷「帳號契合性」會更準。</>}</>
           : <>還沒設定 IG 帳號，<a href="#/settings" onClick={(e) => { e.preventDefault(); go('settings'); }}>到設定填寫</a>。</>}
       </div>
-      <div className="mb"><Chips value={tab} onChange={setTab} options={[['analyze', '內容健檢'], ['posts', '發布紀錄'], ['perf', '數據分析']]} /></div>
+      <div className="mb"><Chips value={tab} onChange={setTab} options={[['copy', '文案架構'], ['carousel', '輪播規劃'], ['analyze', '內容健檢'], ['drafts', `我的草稿（${data.drafts.length}）`], ['posts', '發布紀錄'], ['perf', '數據分析']]} /></div>
+      {tab === 'copy' && <CopyStudio draft={copyDraft} setDraft={setCopyDraft} />}
+      {tab === 'carousel' && <CarouselStudio draft={carouselDraft} setDraft={setCarouselDraft} />}
       {tab === 'analyze' && <Analyze />}
+      {tab === 'drafts' && <Drafts onOpen={openDraft} />}
       {tab === 'posts' && <Posts />}
       {tab === 'perf' && <Performance />}
     </>

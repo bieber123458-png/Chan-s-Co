@@ -133,3 +133,22 @@ test('套用新版計畫：同一天已完成的發布任務不重複新增', as
   const r = planUpgrade([{ id: 'r', day: 1, title: '發布 Reels：舊主題', done: true }], 1);
   assert.equal(r.add.filter((t) => t.day === 1 && t.title.startsWith('發布 Reels')).length, 0);
 });
+
+test('輪播結構：頁數限制 5～10，含封面、總結與行動頁', async () => {
+  const { buildCarousel } = await import('../src/lib/copy.js');
+  const p = buildCarousel(7, 'mistake');
+  assert.equal(p.length, 7);
+  assert.equal(p[0].role, '封面');
+  assert.equal(p[6].role, '行動頁');
+  assert.equal(buildCarousel(3, 'teach').length, 5);
+  assert.equal(buildCarousel(20, 'teach').length, 10);
+});
+
+test('限動成效：完成率、互動率、觸及粉絲比例', async () => {
+  const { storyMetrics } = await import('../src/lib/copy.js');
+  const m = storyMetrics({ firstViews: 800, lastViews: 600, interactions: 30, replies: 10 }, 8000);
+  assert.equal(m.completion, 75);
+  assert.equal(m.engagement, 5);
+  assert.equal(m.reachRate, 10);
+  assert.equal(storyMetrics({ firstViews: 500, lastViews: '' }, null).completion, null);
+});

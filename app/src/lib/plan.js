@@ -122,7 +122,7 @@ export function generateDefaultPlan() {
       tasks.push(t(day, 'ig', '拍攝與寫腳本：本週減脂系列＋接軌主題 2 支 Reels', 'high', 90, '完成 2 支腳本與拍攝，每支都想好「下一集預告」'));
     }
     if (d !== 7) {
-      tasks.push(t(day, 'ig', `限動加互動貼紙：${STORY_STICKERS[(day - 1) % STORY_STICKERS.length]}`, 'mid', 10, '目標互動數 ≥ 35（約限動瀏覽的 5%）', '你的限動平均約 730 次瀏覽，但按讚和回覆幾乎是 0；互動貼紙能讓看的人動一下手指。'));
+      tasks.push(t(day, 'ig', `限動加互動貼紙：${STORY_STICKERS[(day - 1) % STORY_STICKERS.length]}`, 'mid', 10, '目標互動數 ≥ 35（約限動瀏覽的 5%）', '你的限動平均約 730 次瀏覽，但按讚和回覆幾乎是 0；互動貼紙能讓看的人動一下手指。到「限動經營」規劃這組限動，24 小時後回來填數據。'));
       tasks.push(t(day, 'ig', '回覆留言與私訊 15 分鐘', 'low', 15, '每則留言都回，並追問一句'));
     }
 

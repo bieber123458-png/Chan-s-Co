@@ -12,6 +12,7 @@ const MODES = [
   ['improve', '幫我改善'],
   ['decide', '幫我做決策'],
   ['breakdown', '幫我拆解目標'],
+  ['story', '限動顧問'],
 ];
 const PLACEHOLDER = {
   free: '今天做了什麼、遇到什麼、在想什麼都可以寫。例如：今天拍了兩支 Reels，但一直覺得自己講話很卡……',
@@ -20,6 +21,7 @@ const PLACEHOLDER = {
   improve: '貼上你想改善的做法或文字，例如：我的成交話術是……',
   decide: '描述你在猶豫的選擇，例如：要不要先暫停零售，專心做內容？',
   breakdown: '寫下你的目標，例如：這個月想新增 3 位活躍夥伴',
+  story: '問限動的問題，例如：我的限動平均 730 人看，但幾乎沒人回覆，怎麼改？',
 };
 
 export default function Coach() {

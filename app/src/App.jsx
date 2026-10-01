@@ -6,6 +6,7 @@ import Home from './pages/Home.jsx';
 import Plan from './pages/Plan.jsx';
 import Coach from './pages/Coach.jsx';
 import Content from './pages/Content.jsx';
+import Stories from './pages/Stories.jsx';
 import Business from './pages/Business.jsx';
 import Finance from './pages/Finance.jsx';
 import Life from './pages/Life.jsx';
@@ -18,6 +19,7 @@ export const PAGES = {
   plan: { name: '30 天計畫', icon: '▦', C: Plan },
   coach: { name: 'AI 教練', icon: '✦', C: Coach },
   content: { name: '社群內容', icon: '◎', C: Content },
+  stories: { name: '限動經營', icon: '◐', C: Stories },
   business: { name: '事業儀表板', icon: '◇', C: Business },
   finance: { name: '存錢與負債', icon: '＄', C: Finance },
   life: { name: '生活與成長', icon: '❀', C: Life },

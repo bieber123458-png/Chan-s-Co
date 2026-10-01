@@ -29,7 +29,8 @@ export function AiResult({ record, onDelete }) {
 }
 
 // kind：AI 功能種類；buildBody：送出時組成內容；refId：關聯的紀錄（只顯示該紀錄的歷史）
-export function AiPanel({ kind, buildBody, refId, label = '請 AI 給我建議', showHistory = true, inputPlaceholder, validate }) {
+// beforeRun：送出前要做的事（例如先儲存草稿），回傳 false 則中止
+export function AiPanel({ kind, buildBody, refId, label = '請 AI 給我建議', showHistory = true, inputPlaceholder, validate, beforeRun }) {
   const { ai, aiReady, data, remove } = useStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,6 +46,7 @@ export function AiPanel({ kind, buildBody, refId, label = '請 AI 給我建議',
     setLoading(true);
     setError('');
     try {
+      if (beforeRun && (await beforeRun()) === false) return;
       await ai(kind, { ...buildBody(extra), refId });
       setExtra('');
     } catch (e) {
