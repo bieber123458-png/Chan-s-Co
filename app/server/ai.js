@@ -43,7 +43,16 @@ const COACH_FORMAT = `請依序回覆：
 const short = (s, n) => (s && String(s).length > n ? String(s).slice(0, n) + '…' : s || '');
 const money = (n) => `NT$${Math.round(Number(n) || 0).toLocaleString('zh-TW')}`;
 
-function profileBlock(settings) {
+function igLine(data) {
+  const snaps = [...(data?.igSnapshots || [])].sort((a, b) => a.date.localeCompare(b.date));
+  if (!snaps.length) return '- IG 粉絲數：沒有紀錄';
+  const l = snaps[snaps.length - 1];
+  const p = snaps[snaps.length - 2];
+  return `- IG 粉絲數：${l.followers}（${l.date} 紀錄${p ? `，比 ${p.date} ${l.followers - p.followers >= 0 ? '+' : ''}${l.followers - p.followers}` : ''}）` +
+    (l.views30 ? `；近 30 天觀看 ${l.views30}、新粉絲 ${l.newFollowers30 ?? '未填'}、被分享 ${l.shared30 ?? '未填'}` : '');
+}
+
+function profileBlock(settings, data) {
   const s = { ...DEFAULT_SETTINGS, ...settings };
   const today = toDateStr();
   const day = s.startDate ? dayOfDate(s.startDate, today) : null;
@@ -54,7 +63,8 @@ function profileBlock(settings) {
 - 團隊人數目標：${s.teamGoal} 人（目標，非現況）
 - 每月內容產出目標：${s.monthlyContentGoal} 篇
 - Instagram 帳號：${s.igHandle ? `@${s.igHandle}` : '（未填）'}（系統無法讀取帳號內容，只能參考使用者描述與手動輸入的數據）
-- 帳號定位：${s.igPositioning || '（尚未填寫）'}`;
+- 帳號定位：${s.igPositioning || '（尚未填寫）'}
+${igLine(data)}`;
 }
 
 function recentTasksBlock(data, settings) {
@@ -118,7 +128,7 @@ function postsBlock(data) {
 // 依功能組出 system prompt 與訊息
 function build(kind, body, data, settings) {
   const input = String(body.input || '').trim();
-  const ctx = profileBlock(settings) + recentTasksBlock(data, settings);
+  const ctx = profileBlock(settings, data) + recentTasksBlock(data, settings);
   switch (kind) {
     case 'coach': {
       const mode = MODES[body.mode] || MODES.free;
@@ -211,7 +221,7 @@ ${input}
     case 'finance':
       return {
         label: '財務建議',
-        system: `${BASE}\n\n${profileBlock(settings)}${financeBlock(data, settings)}${historyBlock(data)}`,
+        system: `${BASE}\n\n${profileBlock(settings, data)}${financeBlock(data, settings)}${historyBlock(data)}`,
         messages: [{ role: 'user', content: `請依我的真實收支給我財務建議。${input ? `\n我的問題：${input}` : ''}
 優先順序：必要生活費 → 所有最低應繳 → 基本緊急預備金 → 依我選的策略分配額外還款或存錢。
 若收支資料不足，請明確說明，不要假設。
@@ -238,7 +248,7 @@ ${input}
     case 'monthly':
       return {
         label: kind === 'weekly' ? '每週覆盤' : '每月覆盤',
-        system: `${BASE}\n\n${profileBlock(settings)}${historyBlock(data)}`,
+        system: `${BASE}\n\n${profileBlock(settings, data)}${historyBlock(data)}`,
         messages: [{ role: 'user', content: `以下是系統根據我已記錄資料整理的${kind === 'weekly' ? '本週' : '本月'}統計（JSON）。標示為 null 或在 missing 清單中的項目代表沒有資料，不可推測。
 ${JSON.stringify(body.stats)}
 ${input ? `我的補充：${input}` : ''}

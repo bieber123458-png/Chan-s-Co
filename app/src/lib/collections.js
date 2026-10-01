@@ -8,6 +8,7 @@ export const COLLECTIONS = [
   'orders',        // 零售訂單
   'retailTodos',   // 客戶跟進與待辦
   'teamSnapshots', // 團隊人數紀錄
+  'igSnapshots',   // IG 粉絲數與洞察報告總覽紀錄
   'teamFollowups', // 夥伴跟進紀錄
   'transactions',  // 收支紀錄（不含債務還款）
   'debts',         // 負債清單

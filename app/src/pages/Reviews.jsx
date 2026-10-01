@@ -22,9 +22,10 @@ function StatsView({ s }) {
   return (
     <>
       <Missing list={s.missing} />
-      <div className="grid grid-4 mb">
+      <div className="grid grid-3 mb">
         <Stat label="任務完成率" value={fmtPct(s.tasks.rate)} sub={`${s.tasks.done}／${s.tasks.total} 個・${s.tasks.points} 分`} />
         <Stat label="內容產出" value={`${s.content.count} 篇`} sub={`Reels ${s.content.reels}・輪播 ${s.content.carousel}`} />
+        <Stat label="粉絲數" value={s.content.followers === null ? '無紀錄' : fmtNum(s.content.followers)} sub={s.content.followerChange === null ? '需要期間前後兩筆紀錄才能比較' : `變化 ${s.content.followerChange >= 0 ? '+' : ''}${fmtNum(s.content.followerChange)}`} />
         <Stat label="IG 觀看／新增追蹤" value={fmtNum(s.content.views)} sub={`追蹤 +${fmtNum(s.content.follows)}・分享 ${fmtNum(s.content.shares)}・收藏 ${fmtNum(s.content.saves)}`} />
         <Stat label="零售毛利" value={fmtMoney(s.retail.gross)} sub={`${s.retail.count} 筆訂單・營收 ${fmtMoney(s.retail.revenue)}`} />
         <Stat label="收入／支出" value={fmtMoney(s.finance.income)} sub={`支出 ${fmtMoney(s.finance.expenses)}`} />

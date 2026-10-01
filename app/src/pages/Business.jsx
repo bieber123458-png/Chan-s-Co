@@ -44,6 +44,50 @@ function useCrud(col) {
   return { form, setForm, confirm, setConfirm, save: (v) => save(col, v), remove: () => remove(col, confirm.id) };
 }
 
+const IG_FIELDS = [
+  { key: 'date', label: '紀錄日期', type: 'date', required: true },
+  { key: 'followers', label: '粉絲總數', type: 'number', required: true },
+  { key: 'views30', label: '近 30 天觀看次數', type: 'number', hint: '洞察報告 → 總覽' },
+  { key: 'newFollowers30', label: '近 30 天新粉絲', type: 'number' },
+  { key: 'shared30', label: '近 30 天內容被分享', type: 'number' },
+  { key: 'note', label: '備註', type: 'text', full: true, placeholder: '例如：9/1–9/30 洞察報告' },
+];
+
+function Followers() {
+  const { data } = useStore();
+  const c = useCrud('igSnapshots');
+  const snaps = [...data.igSnapshots].sort((a, b) => b.date.localeCompare(a.date));
+  const [latest, prev] = snaps;
+  // 還沒有任何紀錄時，用使用者提供的洞察報告數字預填，按下儲存才會寫入
+  const firstDraft = { ...blankFrom(IG_FIELDS), followers: 8355, views30: 314000, newFollowers30: 110, shared30: 210, note: '9/1–9/30 洞察報告' };
+  const conv = latest?.views30 && latest?.newFollowers30 !== '' && latest?.newFollowers30 != null
+    ? Math.round(latest.views30 / Math.max(1, latest.newFollowers30)) : null;
+
+  return (
+    <>
+      <div className="row between mt"><h3 style={{ fontSize: 16 }}>粉絲數紀錄</h3>
+        <button className="btn ghost sm" onClick={() => c.setForm(snaps.length ? blankFrom(IG_FIELDS) : firstDraft)}>＋ 記錄粉絲數</button></div>
+      {!latest ? <Empty title="還沒有粉絲數紀錄">建議每週記錄一次，就能看出內容調整後粉絲有沒有成長。</Empty> : (
+        <>
+          <div className="grid grid-3 mt">
+            <Stat label="粉絲總數" value={fmtNum(latest.followers)} sub={`${fmtShortDate(latest.date)} 紀錄`} gold />
+            <Stat label="與上次紀錄相比" value={prev ? `${latest.followers - prev.followers >= 0 ? '+' : ''}${fmtNum(latest.followers - prev.followers)}` : '—'} sub={prev ? `上次 ${fmtShortDate(prev.date)}・${fmtNum(prev.followers)}` : '需要兩筆紀錄才能比較'} />
+            <Stat label="追蹤轉換" value={conv ? `每 ${fmtNum(conv)} 次觀看` : '—'} sub={conv ? '才多 1 位新粉絲（近 30 天）' : '填寫近 30 天觀看與新粉絲後計算'} />
+          </div>
+          <div className="table-wrap mt"><table>
+            <thead><tr><th>日期</th><th className="num">粉絲</th><th className="num">30 天觀看</th><th className="num">30 天新粉絲</th><th className="num">被分享</th><th>備註</th><th></th></tr></thead>
+            <tbody>{snaps.map((x) => (
+              <tr key={x.id}><td>{fmtShortDate(x.date)}</td><td className="num">{fmtNum(x.followers)}</td><td className="num">{fmtNum(x.views30)}</td><td className="num">{fmtNum(x.newFollowers30)}</td><td className="num">{fmtNum(x.shared30)}</td><td>{x.note}</td>
+                <td style={{ whiteSpace: 'nowrap' }}><button className="icon-btn" onClick={() => c.setForm(x)}>編輯</button><button className="icon-btn" onClick={() => c.setConfirm(x)}>刪除</button></td></tr>))}
+            </tbody></table></div>
+        </>
+      )}
+      {c.form && <RecordForm title={c.form.id ? '編輯粉絲數紀錄' : '記錄粉絲數'} fields={IG_FIELDS} initial={c.form} onSave={c.save} onClose={() => c.setForm(null)} />}
+      {c.confirm && <Confirm onClose={() => c.setConfirm(null)} onConfirm={c.remove} message="刪除這筆粉絲數紀錄？" />}
+    </>
+  );
+}
+
 function Brand({ month }) {
   const { data, settings } = useStore();
   const posts = data.posts.filter((p) => monthOf(p.date) === month);
@@ -57,6 +101,7 @@ function Brand({ month }) {
         <Stat label="免費資源導流" value={fmtNum(sum(posts, (p) => p.leads))} />
       </div>
       {posts.length === 0 && <p className="small muted mt">這個月還沒有內容紀錄。數據來自「社群內容 → 發布紀錄」的手動輸入。</p>}
+      <Followers />
     </Card>
   );
 }

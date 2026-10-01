@@ -13,6 +13,7 @@ const CSV_SETS = {
   deposits: ['存款紀錄', ['date', 'goalId', 'kind', 'amount', 'account', 'note']],
   posts: ['IG 內容數據', ['date', 'format', 'topic', 'title', 'views', 'reach', 'shares', 'saves', 'comments', 'follows', 'leads', 'notes']],
   orders: ['零售訂單', ['date', 'customer', 'product', 'qty', 'revenue', 'cost', 'note']],
+  igSnapshots: ['粉絲數紀錄', ['date', 'followers', 'views30', 'newFollowers30', 'shared30', 'note']],
   teamSnapshots: ['團隊紀錄', ['date', 'total', 'active', 'newMembers', 'trainings', 'note']],
   tasks: ['任務', ['day', 'category', 'title', 'priority', 'points', 'done', 'minutes', 'result', 'reflection']],
   habits: ['習慣', ['id', 'exercise', 'water', 'sleep', 'reading', 'mood', 'food']],

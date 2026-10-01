@@ -62,6 +62,10 @@ export function rangeStats(data, settings, from, to, today = toDateStr()) {
   const baseSnap = before || snapsIn[0] || null;
   const followups = (data.teamFollowups || []).filter((f) => inRange(f.date, from, to));
   const habits = (data.habits || []).filter((h) => inRange(h.id, from, to));
+  const igAll = [...(data.igSnapshots || [])].sort((a, b) => a.date.localeCompare(b.date));
+  const igIn = igAll.filter((x) => inRange(x.date, from, to));
+  const igLast = igIn[igIn.length - 1] || null;
+  const igBase = igAll.filter((x) => x.date < from).pop() || igIn[0] || null;
 
   const income = txSum('income');
   const expenses = round(txSum('essential') + txSum('nonessential') + txSum('business'));
@@ -74,6 +78,7 @@ export function rangeStats(data, settings, from, to, today = toDateStr()) {
   if (!tx.length) missing.push('沒有收支紀錄');
   if (!orders.length) missing.push('沒有零售訂單紀錄');
   if (!snapsIn.length) missing.push('沒有團隊人數紀錄');
+  if (!igIn.length) missing.push('沒有粉絲數紀錄');
   if (!habits.length) missing.push('沒有習慣紀錄');
 
   return {
@@ -93,6 +98,8 @@ export function rangeStats(data, settings, from, to, today = toDateStr()) {
       views: metric('views'), reach: metric('reach'), shares: metric('shares'),
       saves: metric('saves'), follows: metric('follows'), leads: metric('leads'),
       best: best ? { title: best.title, views: best.views, format: best.format } : null,
+      followers: igLast ? Number(igLast.followers) : null,
+      followerChange: igLast && igBase && igBase !== igLast ? Number(igLast.followers) - Number(igBase.followers) : null,
     },
     finance: {
       hasData: tx.length + pays.length + deps.length > 0,
