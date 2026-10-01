@@ -56,6 +56,7 @@ export const remote = {
   put: (col, rec) => request('PUT', `/api/data/${col}/${encodeURIComponent(rec.id)}`, rec),
   batch: (col, records) => request('POST', `/api/data/${col}/batch`, { records }),
   del: (col, id) => request('DELETE', `/api/data/${col}/${encodeURIComponent(id)}`),
+  delMany: (col, ids) => request('POST', `/api/data/${col}/batch-delete`, { ids }),
   importAll: (data) => request('POST', '/api/import', { data }),
   ai: (kind, body) => request('POST', `/api/ai/${kind}`, body),
 };
@@ -100,6 +101,13 @@ export const local = {
   del: async (col, id) => {
     const data = readLocal();
     data[col] = (data[col] || []).filter((x) => x.id !== id);
+    writeLocal(data);
+    return { ok: true };
+  },
+  delMany: async (col, ids) => {
+    const data = readLocal();
+    const set = new Set(ids);
+    data[col] = (data[col] || []).filter((x) => !set.has(x.id));
     writeLocal(data);
     return { ok: true };
   },

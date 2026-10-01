@@ -104,6 +104,20 @@ export function createApp({ dbFile = process.env.DATABASE_PATH || path.join(root
     }
   });
 
+  app.post('/api/data/:collection/batch-delete', requireUser, checkCollection, (req, res) => {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String) : null;
+    if (!ids) return res.status(400).json({ error: '資料格式錯誤' });
+    db.exec('BEGIN');
+    try {
+      ids.forEach((id) => repo.remove(req.user.id, req.params.collection, id));
+      db.exec('COMMIT');
+      res.json({ ok: true, removed: ids.length });
+    } catch (e) {
+      db.exec('ROLLBACK');
+      res.status(500).json({ error: '刪除失敗：' + e.message });
+    }
+  });
+
   app.delete('/api/data/:collection/:id', requireUser, checkCollection, (req, res) => {
     repo.remove(req.user.id, req.params.collection, req.params.id);
     res.json({ ok: true });

@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react';
 import { useStore } from '../lib/store.jsx';
 import { PageHead, Card, Empty, Chips, Confirm, Field } from '../components/ui.jsx';
 import TaskEditor from '../components/TaskEditor.jsx';
-import { CATEGORIES, PRIORITIES, TOTAL_DAYS, dateOfDay, dayOfDate, toDateStr, generateDefaultPlan } from '../lib/plan.js';
+import { CATEGORIES, PRIORITIES, TOTAL_DAYS, dateOfDay, dayOfDate, toDateStr, generateDefaultPlan, planUpgrade, PLAN_VERSION } from '../lib/plan.js';
 import { fmtDate } from '../lib/format.js';
 
 export default function Plan() {
-  const { data, settings, save, saveMany, remove, saveSettings, toast } = useStore();
+  const { data, settings, save, saveMany, remove, removeMany, saveSettings, toast } = useStore();
   const todayDay = settings.startDate ? dayOfDate(settings.startDate, toDateStr()) : 1;
   const [day, setDay] = useState(Math.min(Math.max(todayDay, 1), TOTAL_DAYS));
   const [cat, setCat] = useState('all');
@@ -31,8 +31,18 @@ export default function Plan() {
     if (ok) toast(`已移到第 ${nd} 天`, 'success');
   };
 
+  const fromDay = Math.min(Math.max(todayDay, 1), TOTAL_DAYS);
+  const upgrade = useMemo(() => planUpgrade(data.tasks, fromDay), [data.tasks, fromDay]);
+  const outdated = data.tasks.length > 0 && !data.tasks.some((t) => t.planVersion === PLAN_VERSION);
+
+  const applyUpgrade = async () => {
+    if (!(await removeMany('tasks', upgrade.removeIds))) return;
+    const saved = await saveMany('tasks', upgrade.add);
+    if (saved) toast(`已從第 ${fromDay} 天起套用新版計畫（${saved.length} 個任務），已完成的紀錄都保留`, 'success');
+  };
+
   const resetPlan = async () => {
-    for (const t of data.tasks) await remove('tasks', t.id, { silent: true });
+    if (!(await removeMany('tasks', data.tasks.map((t) => t.id)))) return;
     const saved = await saveMany('tasks', generateDefaultPlan());
     if (saved) toast('已重新建立預設計畫', 'success');
   };
@@ -40,6 +50,13 @@ export default function Plan() {
   return (
     <>
       <PageHead eyebrow="30-DAY PLAN" title="30 天經營計畫" desc="所有任務、日期、優先順序與目標都可以修改。點選日期查看當天任務。" />
+
+      {outdated && (
+        <div className="notice info">
+          <strong>有新版預設計畫：</strong>依你 IG 的實際數據，內容改成三條線——美業經營、減脂日常系列、接軌主題；每天的限動加上互動貼紙，零售限動改成真實評價寫法，並加入食品廣告的合規提醒。
+          <div className="row mt"><button className="btn sm" onClick={() => setConfirm('upgrade')}>從第 {fromDay} 天起套用新版</button><span className="tiny">已完成或有填寫紀錄的任務都會保留</span></div>
+        </div>
+      )}
 
       <Card title="計畫設定">
         <div className="row" style={{ alignItems: 'flex-end' }}>
@@ -116,7 +133,11 @@ export default function Plan() {
         <Confirm title="重設 30 天計畫？" confirmText="確定重設" onClose={() => setConfirm(null)} onConfirm={resetPlan}
           message="會刪除目前所有任務（包含已完成的紀錄與累積積分），換成預設計畫。其他資料（財務、內容、日記）不受影響。建議先到「設定與備份」匯出備份。" />
       )}
-      {confirm && confirm !== 'reset' && (
+      {confirm === 'upgrade' && (
+        <Confirm title="套用新版計畫？" confirmText="確定套用" onClose={() => setConfirm(null)} onConfirm={applyUpgrade}
+          message={`會把第 ${fromDay} 天起、尚未開始的 ${upgrade.removeIds.length} 個任務換成新版的 ${upgrade.add.length} 個任務。今天以前的任務、已完成的任務與已填寫的紀錄、累積積分都不會受影響。`} />
+      )}
+      {confirm && confirm !== 'reset' && confirm !== 'upgrade' && (
         <Confirm onClose={() => setConfirm(null)} onConfirm={() => remove('tasks', confirm.id)} message={`刪除任務「${confirm.title}」？${confirm.done ? '這個任務已完成，刪除後它的積分也會移除。' : ''}`} />
       )}
     </>

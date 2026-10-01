@@ -7,7 +7,7 @@ import { fmtNum, fmtShortDate } from '../lib/format.js';
 import { sum } from '../lib/finance.js';
 
 export const FORMATS = ['Reels', '輪播', '限動', '貼文'];
-export const TOPICS = ['美業經營錯誤', 'IG 首頁定位', '價目表', '限動經營', '客人為何選擇你', '成交溝通', '經營思維', '個人故事', '免費模板導流', '其他'];
+export const TOPICS = ['美業經營錯誤', 'IG 首頁定位', '價目表', '限動經營', '客人為何選擇你', '成交溝通', '經營思維', '個人故事', '免費模板導流', '減脂日常', '吃東西／美食', '接軌（美業×生活）', '旅遊生活', '產品評價', '其他'];
 
 const POST_FIELDS = [
   { key: 'date', label: '發布日期', type: 'date', required: true },
@@ -21,6 +21,7 @@ const POST_FIELDS = [
   { key: 'comments', label: '留言', type: 'number' },
   { key: 'follows', label: '新增追蹤', type: 'number' },
   { key: 'leads', label: '免費資源導流（領取／私訊數）', type: 'number' },
+  { key: 'stickers', label: '限動互動數（投票／問答／回覆）', type: 'number', hint: '限動才需要填' },
   { key: 'notes', label: '備註（例如：開頭用了什麼、發布時段）', type: 'textarea', rows: 2 },
 ];
 

@@ -113,3 +113,23 @@ test('IG 帳號會從網址中取出並去掉追蹤參數', async () => {
   assert.equal(cleanIgHandle('https://www.instagram.com/chan1201_?stkn=abc&utm_source=qr'), 'chan1201_');
   assert.equal(cleanIgHandle('@chan1201_'), 'chan1201_');
 });
+
+test('套用新版計畫：保留已完成、有紀錄與過去的任務', async () => {
+  const { planUpgrade } = await import('../src/lib/plan.js');
+  const old = [
+    { id: 'a', day: 1, title: 'x', done: false },
+    { id: 'b', day: 5, title: 'y', done: true },
+    { id: 'c', day: 5, title: 'z', done: false, result: '拍好了' },
+    { id: 'd', day: 6, title: 'w', done: false },
+  ];
+  const r = planUpgrade(old, 5);
+  assert.deepEqual(r.removeIds, ['d']);
+  assert.ok(r.add.every((t) => t.day >= 5));
+  assert.ok(r.add.some((t) => t.title.includes('互動貼紙')));
+});
+
+test('套用新版計畫：同一天已完成的發布任務不重複新增', async () => {
+  const { planUpgrade } = await import('../src/lib/plan.js');
+  const r = planUpgrade([{ id: 'r', day: 1, title: '發布 Reels：舊主題', done: true }], 1);
+  assert.equal(r.add.filter((t) => t.day === 1 && t.title.startsWith('發布 Reels')).length, 0);
+});

@@ -20,7 +20,7 @@ export const DEFAULT_SETTINGS = {
   strategy: 'balanced',
   extraDebtPayment: 0,
   igHandle: 'chan1201_',
-  igPositioning: '',
+  igPositioning: '闆闆小陳：美業霧唇師，分享美業經營方法與工具，也記錄自己 72→57kg 的減脂飲食日常。主要受眾是想把經營變簡單的美業人，以及正在減脂、想吃得開心的女生。',
 };
 
 export const taskPoints = (task) => (task.done ? Number(task.points) || 0 : 0);

@@ -71,6 +71,18 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
     }
   }, [backend, toast]);
 
+  const removeMany = useCallback(async (col, ids) => {
+    try {
+      await backend.delMany(col, ids);
+      const set = new Set(ids);
+      setData((d) => ({ ...d, [col]: d[col].filter((x) => !set.has(x.id)) }));
+      return true;
+    } catch (e) {
+      toast(`刪除失敗：${e.message}`, 'error');
+      return false;
+    }
+  }, [backend, toast]);
+
   const saveSettings = useCallback((patch, opts) => save('settings', { ...settings, ...patch, id: 'main' }, opts), [save, settings]);
 
   const importAll = useCallback(async (payload) => {
@@ -86,7 +98,7 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
   }, [backend]);
 
   const value = {
-    mode, status, user, data, settings, save, saveMany, remove, saveSettings, importAll, ai, toast, logout: onLogout,
+    mode, status, user, data, settings, save, saveMany, remove, removeMany, saveSettings, importAll, ai, toast, logout: onLogout,
     aiReady: mode === 'remote' && !!status?.aiConfigured,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
