@@ -74,11 +74,9 @@ npm run dev               # 前端 http://localhost:5173，API 自動轉到 8787
 - **部署注意**：SQLite 是一個檔案，部署平台必須有「持久化磁碟」（例如 Render Disk、Railway Volume、Zeabur Volume、自己的 VPS），並把 `DATABASE_PATH` 指到該磁碟。Vercel／Netlify 這類 serverless 平台沒有持久化磁碟，不適合直接部署這個版本。
 - 備份：定期在「設定與備份」下載 JSON，或直接複製 `app.db` 檔案。
 
-### 部署範例（Render／Railway／Zeabur 皆類似）
+### 部署
 
-- Build command：`cd app && npm install && npm run build`
-- Start command：`cd app && npm start`
-- 環境變數：`ANTHROPIC_API_KEY`、`DATABASE_PATH=/data/app.db`（掛載磁碟路徑）、`NODE_VERSION=22`
+專案根目錄已附 `render.yaml`，可一鍵部署到 Render，步驟見 [DEPLOY.md](DEPLOY.md)。其他平台（Railway、Zeabur、VPS）設定：Build `cd app && npm ci && npm run build`、Start `cd app && npm start`、環境變數 `ANTHROPIC_API_KEY`、`DATABASE_PATH`（指到持久化磁碟）、`NODE_VERSION=22`。
 
 ### 沒有後端時（本機模式）
 
