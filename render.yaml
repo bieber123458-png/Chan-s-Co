@@ -11,6 +11,7 @@ services:
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /api/status
+    # AI 金鑰非必要：部署後如果想用 AI，再到 Render 的 Environment 新增 ANTHROPIC_API_KEY
     envVars:
       - key: NODE_VERSION
         value: "22"
@@ -20,8 +21,6 @@ services:
         value: "false"
       - key: AI_MODEL
         value: claude-opus-5-5
-      - key: ANTHROPIC_API_KEY
-        sync: false
     disk:
       name: data
       mountPath: /var/data
