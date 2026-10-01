@@ -6,9 +6,9 @@ import { DEFAULT_SETTINGS } from './stats.js';
 const Ctx = createContext(null);
 export const useStore = () => useContext(Ctx);
 
-export function StoreProvider({ mode, status, initialData, user, onLogout, toast, children }) {
+export function StoreProvider({ mode, status, initialData, user, onLogout, toast, cloud, children }) {
   const [data, setData] = useState(() => ({ ...emptyData(), ...initialData }));
-  const backend = mode === 'remote' ? remote : local;
+  const backend = mode === 'remote' ? remote : mode === 'cloud' ? cloud : local;
   const dataRef = useRef(data);
   dataRef.current = data;
 
@@ -92,14 +92,31 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
 
   // 呼叫 AI。成功後把紀錄加入 AI 歷史並回傳；失敗時丟出錯誤讓元件顯示
   const ai = useCallback(async (kind, body) => {
-    const rec = await backend.ai(kind, body);
+    const rec = await backend.ai(kind, body, dataRef.current, settings);
     replaceIn('aiHistory', rec);
     return rec;
-  }, [backend]);
+  }, [backend, settings]);
+
+  // 下載檔案：Claude 雲端模式透過平台的下載確認視窗，其他模式用瀏覽器下載
+  const downloadFile = useCallback(async (filename, text, type) => {
+    if (mode === 'cloud') {
+      try { await cloud.download(filename, text); toast('已下載', 'success'); } catch (e) { if (e.code !== 'declined') toast(e.message, 'error'); }
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('已下載', 'success');
+  }, [mode, cloud, toast]);
 
   const value = {
-    mode, status, user, data, settings, save, saveMany, remove, removeMany, saveSettings, importAll, ai, toast, logout: onLogout,
-    aiReady: mode === 'remote' && !!status?.aiConfigured,
+    mode, status, user, data, settings, save, saveMany, remove, removeMany, saveSettings, importAll, ai, toast, downloadFile, logout: onLogout,
+    aiReady: mode === 'cloud' || (mode === 'remote' && !!status?.aiConfigured),
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

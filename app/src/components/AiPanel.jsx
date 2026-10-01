@@ -6,6 +6,7 @@ import { fmtDateTime } from '../lib/format.js';
 
 export function AiNotice() {
   const { mode, status } = useStore();
+  if (mode === 'cloud') return null;
   if (mode !== 'remote') {
     return <div className="notice warn">目前是<strong>本機模式</strong>（沒有連到後端伺服器），AI 功能無法使用，資料只存在這個瀏覽器。請依 README 啟動伺服器。</div>;
   }

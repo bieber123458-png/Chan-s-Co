@@ -78,6 +78,10 @@ npm run dev               # 前端 http://localhost:5173，API 自動轉到 8787
 
 專案根目錄已附 `render.yaml`，可一鍵部署到 Render，步驟見 [DEPLOY.md](DEPLOY.md)。其他平台（Railway、Zeabur、VPS）設定：Build `cd app && npm ci && npm run build`、Start `cd app && npm start`、環境變數 `ANTHROPIC_API_KEY`、`DATABASE_PATH`（指到持久化磁碟）、`NODE_VERSION=22`。
 
+### 在 claude.ai 打開（Claude 雲端模式，不需要伺服器與金鑰）
+
+發布成 claude.ai 頁面時，系統自動改用 Claude 雲端：資料存在頁面資料庫裡只有本人看得到的私人區（跨裝置同步），AI 透過本人的 Claude 帳號回答（第一次使用會詢問是否允許，用量算在 Claude 方案內），備份透過平台的下載確認視窗。程式在 `src/lib/cloud.js`，提示詞與伺服器版共用 `src/lib/prompts.js`。
+
 ### 沒有後端時（本機模式）
 
 如果只把 `dist/` 當靜態網頁開啟（例如 GitHub Pages），系統會自動切換成**本機模式**：資料存在瀏覽器 localStorage，畫面會清楚提示。限制：AI 無法使用、資料只在該瀏覽器、清除瀏覽器資料就會消失、無法跨裝置同步。請定期匯出備份。

@@ -21,25 +21,13 @@ const CSV_SETS = {
   journals: ['日記', ['date', 'text']],
 };
 
-function download(name, text, type) {
-  const blob = new Blob([text], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 const csvCell = (v) => {
   const s = v === null || v === undefined ? '' : String(v);
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
 export default function Settings() {
-  const { data, settings, saveSettings, importAll, mode, status, user, toast } = useStore();
+  const { data, settings, saveSettings, importAll, mode, status, user, toast, downloadFile } = useStore();
   const [f, setF] = useState({ displayName: settings.displayName, goals: settings.goals, emergencyMonths: settings.emergencyMonths, igHandle: settings.igHandle, igPositioning: settings.igPositioning });
   const [pending, setPending] = useState(null);
   const fileRef = useRef(null);
@@ -55,15 +43,14 @@ export default function Settings() {
 
   const exportJson = () => {
     const payload = { app: 'xiaochen-30-day-system', version: 1, exportedAt: new Date().toISOString(), data };
-    download(`30天經營系統備份-${toDateStr()}.json`, JSON.stringify(payload, null, 2), 'application/json');
-    toast('已下載 JSON 備份', 'success');
+    downloadFile(`30天經營系統備份-${toDateStr()}.json`, JSON.stringify(payload, null, 2), 'application/json');
   };
 
   const exportCsv = (key) => {
     const [name, cols] = CSV_SETS[key];
     const rows = [cols.join(','), ...data[key].map((r) => cols.map((c) => csvCell(r[c])).join(','))];
     // 加上 BOM，Excel 開啟中文才不會亂碼
-    download(`${name}-${toDateStr()}.csv`, '﻿' + rows.join('\n'), 'text/csv;charset=utf-8');
+    downloadFile(`${name}-${toDateStr()}.csv`, '﻿' + rows.join('\n'), 'text/csv;charset=utf-8');
   };
 
   const onFile = async (e) => {
@@ -99,11 +86,13 @@ export default function Settings() {
       <Card title="資料儲存與 AI 狀態">
         {mode === 'remote' ? (
           <div className="notice ok small">資料儲存在伺服器的 SQLite 資料庫（帳號：{user?.username}）。換裝置、換瀏覽器登入同一個帳號都能看到相同資料。</div>
+        ) : mode === 'cloud' ? (
+          <div className="notice ok small"><strong>Claude 雲端模式：</strong>資料存在這個頁面的 Claude 雲端，放在只有你看得到的私人區。用同一個 Claude 帳號在手機或電腦打開這個連結，都會看到相同資料。就算把連結分享給別人，對方也看不到你的資料。</div>
         ) : (
           <div className="notice warn small"><strong>本機模式：</strong>資料只存在這台裝置的這個瀏覽器（localStorage）。清除瀏覽器資料、使用無痕模式或換裝置都會看不到，也無法跨裝置同步。請定期匯出 JSON 備份。</div>
         )}
         <div className="small">
-          <div>AI 狀態：{mode !== 'remote' ? '無法使用（沒有後端）' : status?.aiConfigured ? `已設定（模型 ${status.aiModel}）` : '尚未設定 ANTHROPIC_API_KEY'}</div>
+          <div>AI 狀態：{mode === 'cloud' ? '使用你的 Claude 帳號（第一次使用會詢問是否允許，用量算在你的 Claude 方案內）' : mode !== 'remote' ? '無法使用（沒有後端）' : status?.aiConfigured ? `已設定（模型 ${status.aiModel}）` : '尚未設定 ANTHROPIC_API_KEY'}</div>
           <div>Instagram：{settings.igHandle ? <>@{settings.igHandle}（<a href={`https://www.instagram.com/${settings.igHandle}/`} target="_blank" rel="noreferrer">開啟帳號</a>）・</> : null}未連接後台，社群數據需手動輸入。</div>
           <div>目前共有 {count} 筆資料。</div>
         </div>

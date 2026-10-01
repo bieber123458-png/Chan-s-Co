@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { detectBackend, remote, local, getToken, setToken } from './lib/api.js';
 import { StoreProvider, useStore } from './lib/store.jsx';
+import { connectCloud } from './lib/cloud.js';
 import Login from './pages/Login.jsx';
 import Home from './pages/Home.jsx';
 import Plan from './pages/Plan.jsx';
@@ -60,7 +61,7 @@ function Layout() {
       ))}
       <hr className="divider" />
       <div className="tiny muted" style={{ padding: '0 12px' }}>
-        {mode === 'remote' ? <>已登入：{user?.username}<br />資料儲存在伺服器資料庫</> : <>本機模式<br />資料只存在這個瀏覽器</>}
+        {mode === 'remote' ? <>已登入：{user?.username}<br />資料儲存在伺服器資料庫</> : mode === 'cloud' ? <>Claude 雲端模式<br />資料跟著你的 Claude 帳號，只有你看得到</> : <>本機模式<br />資料只存在這個瀏覽器</>}
       </div>
       {mode === 'remote' && <button className="nav-link small mt" onClick={logout}><span className="nav-icon">⎋</span>登出</button>}
     </>
@@ -112,6 +113,17 @@ export default function App() {
     setState({ phase: 'loading' });
     const status = await detectBackend();
     if (!status) {
+      // 在 claude.ai 打開時，改用 Claude 雲端（資料跟著 Claude 帳號、AI 用自己的 Claude 帳號）
+      const cloud = await connectCloud().catch(() => null);
+      if (cloud) {
+        try {
+          const data = await cloud.loadAll();
+          setState({ phase: 'ready', mode: 'cloud', status: null, data, user: null, cloud });
+        } catch (e) {
+          setState({ phase: 'error', message: e.message });
+        }
+        return;
+      }
       const data = await local.loadAll();
       setState({ phase: 'ready', mode: 'local', status: null, data, user: null });
       return;
@@ -136,13 +148,13 @@ export default function App() {
   }, [boot]);
 
   let body;
-  if (state.phase === 'loading') body = <div className="loading-page"><div className="row"><span className="spinner" /> 載入中…</div></div>;
+  if (state.phase === 'loading') body = <div className="loading-page"><div className="row"><span className="spinner" /> 載入中…（第一次開啟可能需要幾秒）</div></div>;
   else if (state.phase === 'error') body = (
     <div className="login-wrap"><div className="card login-card"><h2>載入失敗</h2><p className="mt">{state.message}</p><button className="btn mt" onClick={boot}>重新載入</button></div></div>
   );
   else if (state.phase === 'login') body = <Login status={state.status} onDone={(token) => { setToken(token); boot(); }} />;
   else body = (
-    <StoreProvider key={state.user?.id || 'local'} mode={state.mode} status={state.status} initialData={state.data} user={state.user} onLogout={logout} toast={toast}>
+    <StoreProvider key={state.user?.id || state.mode} mode={state.mode} status={state.status} cloud={state.cloud} initialData={state.data} user={state.user} onLogout={logout} toast={toast}>
       <Layout />
     </StoreProvider>
   );
