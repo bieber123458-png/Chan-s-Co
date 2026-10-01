@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { remote, local, newId, emptyData } from './api.js';
 import { DEFAULT_SETTINGS } from './stats.js';
 import { dateOfDay } from './plan.js';
+import { build, toPlainPrompt } from './prompts.js';
 
 const Ctx = createContext(null);
 export const useStore = () => useContext(Ctx);
@@ -98,6 +99,23 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
     return rec;
   }, [backend, settings]);
 
+  // 沒有連接 AI 時：組出要貼給 Claude 的完整指令，以及把 Claude 的回覆存回系統
+  const promptFor = useCallback((kind, body) => {
+    const spec = build(kind, body, dataRef.current, settings);
+    if (!spec) throw new Error('不支援的 AI 功能');
+    return { label: spec.label, text: toPlainPrompt(spec) };
+  }, [settings]);
+
+  const saveManualAi = useCallback((kind, body, label, output) => save('aiHistory', {
+    kind,
+    label,
+    mode: body.mode || null,
+    refId: body.refId || null,
+    input: String(body.input || '') || body.summary || label,
+    output: output.trim(),
+    model: 'Claude（手動貼上）',
+  }), [save]);
+
   // 下載檔案：Claude 雲端模式透過平台的下載確認視窗，其他模式用瀏覽器下載
   const downloadFile = useCallback(async (filename, text, type) => {
     if (mode === 'cloud') {
@@ -126,7 +144,7 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
   }, [data.tasks, settings.startDate, saveMany]);
 
   const value = {
-    mode, status, user, data, settings, save, saveMany, remove, removeMany, saveSettings, importAll, ai, toast, downloadFile, logout: onLogout,
+    mode, status, user, data, settings, save, saveMany, remove, removeMany, saveSettings, importAll, ai, toast, downloadFile, promptFor, saveManualAi, logout: onLogout,
     aiReady: mode === 'cloud' || (mode === 'remote' && !!status?.aiConfigured),
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

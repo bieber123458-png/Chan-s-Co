@@ -28,3 +28,15 @@ test('每一種 AI 功能都能組出提示詞', () => {
   assert.match(story.system, /粉絲 8355/);
   assert.match(build('copywrite', cases.copywrite, data, {}).messages[0].content, /纖體/);
 });
+
+test('複製給 Claude：指令包含系統說明、之前的對話與這次的問題', async () => {
+  const { toPlainPrompt } = await import('../src/lib/prompts.js');
+  const withHistory = { ...data, aiHistory: [{ kind: 'coach', input: '上次的問題', output: '上次的建議', createdAt: '2026-10-01T00:00:00Z' }] };
+  const text = toPlainPrompt(build('coach', { mode: 'story', input: '這次的問題' }, withHistory, {}));
+  assert.match(text, /小陳的每月經營系統/);
+  assert.match(text, /上次的建議/);
+  assert.ok(text.trim().endsWith('這次的問題'));
+  const carousel = toPlainPrompt(build('carousel', { style: 'teach', topic: '美業工具', pages: buildCarousel(6, 'teach') }, data, {}));
+  assert.match(carousel, /美業工具/);
+  assert.match(carousel, /第 N 頁/);
+});

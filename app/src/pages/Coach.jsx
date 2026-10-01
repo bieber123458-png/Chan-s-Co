@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../lib/store.jsx';
 import { PageHead, Card, Empty, Chips, Confirm } from '../components/ui.jsx';
-import { AiNotice, AiResult } from '../components/AiPanel.jsx';
+import { AiNotice, AiResult, ManualClaude } from '../components/AiPanel.jsx';
 import { Markdown } from '../lib/markdown.jsx';
 import { fmtDateTime } from '../lib/format.js';
 
@@ -96,10 +96,20 @@ export default function Coach() {
             <textarea className="input" rows={4} placeholder={PLACEHOLDER[mode]} value={text} onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send(); }} />
             {error && <div className="notice err mt">{error}</div>}
-            <div className="row between mt">
-              <span className="tiny muted">AI 建議僅供參考，重要決定請依實際狀況判斷。</span>
-              <button className="btn" onClick={send} disabled={!!pending || !aiReady}>{pending ? <span className="spinner" /> : null}送出</button>
-            </div>
+            {aiReady ? (
+              <div className="row between mt">
+                <span className="tiny muted">AI 建議僅供參考，重要決定請依實際狀況判斷。</span>
+                <button className="btn" onClick={send} disabled={!!pending}>{pending ? <span className="spinner" /> : null}送出</button>
+              </div>
+            ) : (
+              <div className="mt">
+                <ManualClaude kind="coach" compact
+                  validate={() => (!text.trim() ? '請先輸入想跟教練說的內容' : '')}
+                  getBody={() => ({ mode, input: text.trim() })}
+                  onSaved={() => setText('')} />
+                <p className="tiny muted mt">指令裡已經包含你的目標、近 7 天紀錄和之前的對話，Claude 會延續上次的建議。</p>
+              </div>
+            )}
           </Card>
         </>
       )}

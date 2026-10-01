@@ -349,3 +349,14 @@ ${input ? `我的補充：${input}` : ''}
       return null;
   }
 }
+
+// 沒有連接 AI 時：把同樣的指令整理成一段文字，讓使用者貼到 Claude App
+export function toPlainPrompt(spec) {
+  const msgs = spec.messages;
+  const last = msgs[msgs.length - 1].content;
+  const earlier = msgs.slice(0, -1);
+  const history = earlier.length
+    ? `\n\n---\n\n以下是我們之前的對話（供你參考，延續上次的建議）：\n${earlier.map((m) => `${m.role === 'user' ? '我' : '你'}：${m.content}`).join('\n\n')}`
+    : '';
+  return `${spec.system}${history}\n\n---\n\n${last}`;
+}
