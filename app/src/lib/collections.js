@@ -1,7 +1,7 @@
 // 資料集合清單（前後端共用）。每一筆紀錄在資料庫中是一列，內容存成 JSON。
 export const COLLECTIONS = [
   'settings',      // 個人設定與目標（單筆 id = main）
-  'tasks',         // 30 天計畫任務
+  'tasks',         // 每月計畫任務
   'dayLogs',       // 每日狀態（沒動力模式、心情、今日覆盤）
   'aiHistory',     // AI 分析與對話歷史
   'posts',         // IG 內容與數據

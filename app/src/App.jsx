@@ -17,7 +17,7 @@ import Settings from './pages/Settings.jsx';
 
 export const PAGES = {
   home: { name: '今日任務', icon: '☀', C: Home },
-  plan: { name: '30 天計畫', icon: '▦', C: Plan },
+  plan: { name: '每月計畫', icon: '▦', C: Plan },
   coach: { name: 'AI 教練', icon: '✦', C: Coach },
   content: { name: '社群內容', icon: '◎', C: Content },
   stories: { name: '限動經營', icon: '◐', C: Stories },
@@ -70,12 +70,12 @@ function Layout() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand"><div className="brand-name">小陳的 30 天經營系統</div><div className="brand-sub">GROW · BUILD · SAVE</div></div>
+        <div className="brand"><div className="brand-name">小陳的每月經營系統</div><div className="brand-sub">GROW · BUILD · SAVE</div></div>
         {navList}
       </aside>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="mobile-top">
-          <div className="brand-name" style={{ fontSize: 16 }}>小陳的 30 天經營系統</div>
+          <div className="brand-name" style={{ fontSize: 16 }}>小陳的每月經營系統</div>
           <button className="icon-btn" onClick={() => setDrawer(true)} aria-label="開啟選單">☰</button>
         </div>
         <main className="main"><C go={go} /></main>

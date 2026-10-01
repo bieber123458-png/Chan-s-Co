@@ -1,11 +1,11 @@
-// 新增／編輯任務的對話框（今日任務與 30 天計畫共用）
+// 新增／編輯任務的對話框（今日任務與每月計畫共用）
 import { useState } from 'react';
 import { Modal, Field } from './ui.jsx';
-import { CATEGORIES, PRIORITIES, TOTAL_DAYS } from '../lib/plan.js';
+import { CATEGORIES, PRIORITIES, toDateStr } from '../lib/plan.js';
 
-export default function TaskEditor({ task, defaultDay = 1, onSave, onClose }) {
+export default function TaskEditor({ task, defaultDate = toDateStr(), onSave, onClose }) {
   const [f, setF] = useState(() => ({
-    title: '', category: 'brand', priority: 'mid', day: defaultDay, goal: '', description: '', estMinutes: 20,
+    title: '', category: 'brand', priority: 'mid', date: defaultDate, goal: '', description: '', estMinutes: 20,
     ...task,
     points: task?.points ?? PRIORITIES[task?.priority || 'mid'].points,
   }));
@@ -15,14 +15,13 @@ export default function TaskEditor({ task, defaultDay = 1, onSave, onClose }) {
   const submit = async () => {
     const e = {};
     if (!f.title.trim()) e.title = '請輸入任務名稱';
-    const day = Number(f.day);
-    if (!Number.isInteger(day) || day < 1 || day > TOTAL_DAYS) e.day = `請輸入 1～${TOTAL_DAYS}`;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date || '')) e.date = '請選擇日期';
     if (f.points === '' || Number(f.points) < 0 || Number(f.points) > 100) e.points = '請輸入 0～100';
     if (f.estMinutes !== '' && Number(f.estMinutes) < 0) e.estMinutes = '不能是負數';
     setErr(e);
     if (Object.keys(e).length) return;
     await onSave({
-      ...task, ...f, title: f.title.trim(), day, points: Number(f.points),
+      ...task, ...f, title: f.title.trim(), date: f.date, points: Number(f.points),
       estMinutes: f.estMinutes === '' ? '' : Number(f.estMinutes),
       done: task?.done || false, result: task?.result || '', minutes: task?.minutes || '', reflection: task?.reflection || '',
     });
@@ -44,7 +43,7 @@ export default function TaskEditor({ task, defaultDay = 1, onSave, onClose }) {
             {Object.entries(PRIORITIES).map(([k, p]) => <option key={k} value={k}>{p.name}</option>)}
           </select>
         </Field>
-        <Field label="安排在第幾天" error={err.day}><input className="input" type="number" min="1" max={TOTAL_DAYS} inputMode="numeric" value={f.day} onChange={set('day')} /></Field>
+        <Field label="日期" error={err.date}><input className="input" type="date" value={f.date || ''} onChange={set('date')} /></Field>
         <Field label="完成可得積分" error={err.points}><input className="input" type="number" min="0" inputMode="numeric" value={f.points} onChange={set('points')} /></Field>
         <Field label="預估時間（分鐘）" error={err.estMinutes} hint="沒動力模式會優先挑選短時間任務"><input className="input" type="number" min="0" inputMode="numeric" value={f.estMinutes} onChange={set('estMinutes')} /></Field>
         <Field label="目標（做到什麼程度算完成）" full><input className="input" value={f.goal} onChange={set('goal')} /></Field>

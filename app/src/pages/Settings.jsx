@@ -43,7 +43,7 @@ export default function Settings() {
 
   const exportJson = () => {
     const payload = { app: 'xiaochen-30-day-system', version: 1, exportedAt: new Date().toISOString(), data };
-    downloadFile(`30天經營系統備份-${toDateStr()}.json`, JSON.stringify(payload, null, 2), 'application/json');
+    downloadFile(`每月經營系統備份-${toDateStr()}.json`, JSON.stringify(payload, null, 2), 'application/json');
   };
 
   const exportCsv = (key) => {

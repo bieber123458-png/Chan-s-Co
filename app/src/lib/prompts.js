@@ -1,11 +1,11 @@
 // AI 提示詞（前後端共用）：依功能把使用者的紀錄整理成給 Claude 的指示
 // 後端版本用 API 金鑰呼叫；Claude 雲端版本由瀏覽器直接透過使用者的 Claude 帳號呼叫
-import { CATEGORIES, PRIORITIES, dayOfDate, dateOfDay, toDateStr, addDays } from './plan.js';
+import { CATEGORIES, PRIORITIES, cycleOf, taskDate, toDateStr, addDays } from './plan.js';
 import { monthlySummary, debtStatus, goalProgress, avgEssential, STRATEGIES, TX_TYPES } from './finance.js';
 import { DEFAULT_SETTINGS } from './stats.js';
 import { FRAMEWORKS, CAROUSEL_STYLES, CAROUSEL_SPEC, STORY_TYPES, storyMetrics, COMPLIANCE_NOTE } from './copy.js';
 
-const BASE = `你是「小陳的 30 天經營系統」裡的 AI 個人成長教練與事業顧問。使用者是台灣的美業經營者（暱稱小陳），同時經營美業個人品牌（IG 教學與經營知識內容）、婕樂纖零售與團隊。
+const BASE = `你是「小陳的每月經營系統」裡的 AI 個人成長教練與事業顧問。使用者是台灣的美業經營者（暱稱小陳），同時經營美業個人品牌（IG 教學與經營知識內容）、婕樂纖零售與團隊。
 
 回覆規則：
 - 一律使用繁體中文與台灣常用用語，語氣溫暖、直接、像一位懂經營的朋友，不說教、不責備、不羞辱。
@@ -51,9 +51,9 @@ function igLine(data) {
 function profileBlock(settings, data) {
   const s = { ...DEFAULT_SETTINGS, ...settings };
   const today = toDateStr();
-  const day = s.startDate ? dayOfDate(s.startDate, today) : null;
+  const c = s.startDate ? cycleOf(s.startDate, today) : null;
   return `## 使用者資料
-- 今天：${today}${day ? `（30 天計畫第 ${day} 天）` : '（尚未設定計畫開始日）'}
+- 今天：${today}${!c ? '（尚未設定計畫開始日）' : c.index < 0 ? '（計畫尚未開始）' : `（第 ${c.index + 1} 個月計畫的第 ${c.day} 天，本月 ${c.start}～${c.end}，共 ${c.length} 天）`}
 - 個人目標：${s.goals || '（尚未填寫）'}
 - 月收入目標：${money(s.monthlyIncomeGoal)}（目標，非現況）
 - 團隊人數目標：${s.teamGoal} 人（目標，非現況）
@@ -68,7 +68,7 @@ function recentTasksBlock(data, settings) {
   const today = toDateStr();
   const from = addDays(today, -6);
   const rows = (data.tasks || [])
-    .map((t) => ({ ...t, date: dateOfDay(settings.startDate, t.day) }))
+    .map((t) => ({ ...t, date: taskDate(t, settings.startDate) }))
     .filter((t) => t.date >= from && t.date <= today)
     .filter((t) => t.done || t.result || t.reflection);
   if (!rows.length) return '\n## 近 7 天任務紀錄\n（近 7 天沒有任務完成或心得紀錄）';
@@ -178,13 +178,13 @@ ${input ? `我想補充：${input}` : ''}
       };
     }
     case 'dailyReview': {
-      const day = Number(body.day);
-      const tasks = (data.tasks || []).filter((t) => t.day === day);
+      const date = String(body.date || '');
+      const tasks = (data.tasks || []).filter((t) => taskDate(t, settings.startDate) === date);
       const list = tasks.map((t) => `- [${t.done ? 'x' : ' '}] ${t.title}${t.result ? `｜結果：${t.result}` : ''}${t.reflection ? `｜心得：${t.reflection}` : ''}`).join('\n');
       return {
         label: '今日覆盤',
         system: `${BASE}\n\n${ctx}${historyBlock(data)}`,
-        messages: [{ role: 'user', content: `請幫我做第 ${day} 天的覆盤。
+        messages: [{ role: 'user', content: `請幫我做 ${date} 的覆盤。
 今天的任務：
 ${list || '（沒有任務）'}
 今天的心情與狀態：${body.mood || '未填'}

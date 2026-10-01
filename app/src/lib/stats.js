@@ -1,5 +1,5 @@
 // 統計與覆盤（前後端共用）。只使用已記錄的資料，不足時明確列出。
-import { CATEGORIES, dateOfDay, toDateStr } from './plan.js';
+import { CATEGORIES, taskDate, toDateStr } from './plan.js';
 import { round, sum, debtStatus } from './finance.js';
 
 export const POINTS_PER_DRAW = 30;
@@ -34,9 +34,7 @@ export function rangeStats(data, settings, from, to, today = toDateStr()) {
   const start = settings.startDate;
   // 任務完成率只計算「已經到來」的日子，未來的任務不算未完成
   const taskTo = to < today ? to : today;
-  const tasks = start
-    ? (data.tasks || []).filter((x) => inRange(dateOfDay(start, x.day), from, taskTo))
-    : [];
+  const tasks = (data.tasks || []).filter((x) => { const d = taskDate(x, start); return d && inRange(d, from, taskTo); });
   const done = tasks.filter((x) => x.done);
   const byCategory = {};
   for (const [k, c] of Object.entries(CATEGORIES)) {

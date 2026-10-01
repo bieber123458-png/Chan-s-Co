@@ -3,7 +3,7 @@ import { useStore } from '../lib/store.jsx';
 import { PageHead, Card, Chips, Stat, Field, Progress } from '../components/ui.jsx';
 import { AiNotice, AiPanel } from '../components/AiPanel.jsx';
 import { rangeStats, ruleBasedReview } from '../lib/stats.js';
-import { addDays, dateOfDay, dayOfDate, toDateStr, TOTAL_DAYS } from '../lib/plan.js';
+import { addDays, cycleOf, cycleRange, toDateStr } from '../lib/plan.js';
 import { fmtMoney, fmtNum, fmtPct, fmtShortDate } from '../lib/format.js';
 
 function Missing({ list }) {
@@ -57,22 +57,43 @@ function StatsView({ s }) {
   );
 }
 
+// 選擇第幾個月（從開始日起算）
+function useMonthPicker() {
+  const { settings } = useStore();
+  const start = settings.startDate;
+  const cur = start ? cycleOf(start, toDateStr()) : null;
+  const [idx, setIdx] = useState(Math.max(0, cur?.index ?? 0));
+  const range = start ? cycleRange(start, idx) : null;
+  const picker = start ? (
+    <div className="row mb">
+      <button className="btn ghost sm" disabled={idx <= 0} onClick={() => setIdx(idx - 1)}>‹ 上個月</button>
+      <strong>第 {idx + 1} 個月</strong><span className="small muted">{fmtShortDate(range.start)}～{fmtShortDate(range.end)}</span>
+      <button className="btn ghost sm" disabled={idx >= Math.max(0, cur.index)} onClick={() => setIdx(idx + 1)}>下個月 ›</button>
+    </div>
+  ) : <div className="notice warn small">尚未設定計畫開始日期，以下以最近的日期計算。</div>;
+  return { idx, range, picker, cur };
+}
+
 function Weekly() {
   const { data, settings } = useStore();
-  const todayDay = settings.startDate ? dayOfDate(settings.startDate, toDateStr()) : 1;
-  const weeks = Math.ceil(TOTAL_DAYS / 7);
-  const [week, setWeek] = useState(Math.min(weeks, Math.max(1, Math.ceil(todayDay / 7))));
-  const from = settings.startDate ? dateOfDay(settings.startDate, (week - 1) * 7 + 1) : addDays(toDateStr(), -6);
-  const to = settings.startDate ? dateOfDay(settings.startDate, Math.min(week * 7, TOTAL_DAYS)) : toDateStr();
+  const { range, picker, idx } = useMonthPicker();
+  const today = toDateStr();
+  const weeks = range ? Math.ceil(range.length / 7) : 1;
+  const curWeek = range && today >= range.start && today <= range.end ? Math.ceil((cycleOf(settings.startDate, today).day) / 7) : 1;
+  const [weekSel, setWeek] = useState(curWeek);
+  const week = Math.min(weekSel, weeks);
+  const from = range ? addDays(range.start, (week - 1) * 7) : addDays(today, -6);
+  const to = range ? (addDays(from, 6) < range.end ? addDays(from, 6) : range.end) : today;
   const s = useMemo(() => rangeStats(data, settings, from, to), [data, settings, from, to]);
 
   return (
     <>
+      {picker}
       <div className="mb"><Chips value={String(week)} onChange={(k) => setWeek(Number(k))} options={Array.from({ length: weeks }, (_, i) => [String(i + 1), `第 ${i + 1} 週`])} /></div>
       <p className="small muted mb">期間：{fmtShortDate(from)} ～ {fmtShortDate(to)}{s.taskTo < to && s.taskTo >= from ? `（任務完成率計算到今天 ${fmtShortDate(s.taskTo)}）` : ''}</p>
       <StatsView s={s} />
       <Card title="AI 每週覆盤與下週建議">
-        <AiPanel kind="weekly" refId={`week-${week}-${from}`} label="生成本週覆盤" buildBody={(x) => ({ stats: s, input: x, summary: `第 ${week} 週覆盤` })}
+        <AiPanel kind="weekly" refId={`week-${from}`} label="生成本週覆盤" buildBody={(x) => ({ stats: s, input: x, summary: `第 ${idx + 1} 個月第 ${week} 週覆盤` })}
           inputPlaceholder="（選填）這週你自己的感受或想補充的事" />
       </Card>
     </>
@@ -81,10 +102,11 @@ function Weekly() {
 
 function Monthly() {
   const { data, settings } = useStore();
-  const [month, setMonth] = useState(toDateStr().slice(0, 7));
-  const from = `${month}-01`;
-  const last = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate();
-  const to = `${month}-${String(last).padStart(2, '0')}`;
+  const { range, picker, idx } = useMonthPicker();
+  const today = toDateStr();
+  const from = range ? range.start : `${today.slice(0, 7)}-01`;
+  const to = range ? range.end : today;
+  const month = `第 ${idx + 1} 個月`;
   const s = useMemo(() => rangeStats(data, settings, from, to), [data, settings, from, to]);
   const savingsPlan = data.savingsGoals.reduce((a, g) => a + (Number(g.monthlyAmount) || 0), 0);
   const rows = [
@@ -96,7 +118,7 @@ function Monthly() {
 
   return (
     <>
-      <div className="row mb"><Field label="月份"><input className="input" type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} /></Field></div>
+      {picker}
       <Card title="目標與實際">
         <div className="table-wrap"><table>
           <thead><tr><th>項目</th><th className="num">目標</th><th className="num">實際</th><th className="num">差距</th><th style={{ width: '30%' }}>達成</th></tr></thead>
@@ -113,7 +135,7 @@ function Monthly() {
       </Card>
       <StatsView s={s} />
       <Card title="AI 每月覆盤與調整建議">
-        <AiPanel kind="monthly" refId={`month-${month}`} label="生成本月覆盤" buildBody={(x) => ({ stats: { ...s, goals: Object.fromEntries(rows.map(([n, g, a]) => [n, { goal: g, actual: a }])) }, input: x, summary: `${month} 月覆盤` })}
+        <AiPanel kind="monthly" refId={`month-${from}`} label="生成本月覆盤" buildBody={(x) => ({ stats: { ...s, goals: Object.fromEntries(rows.map(([n, g, a]) => [n, { goal: g, actual: a }])) }, input: x, summary: `${month}覆盤（${from}～${to}）` })}
           inputPlaceholder="（選填）這個月你自己的感受或想補充的事" />
       </Card>
     </>

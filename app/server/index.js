@@ -1,4 +1,4 @@
-// 小陳的 30 天經營系統 — 後端 API 與網站伺服器
+// 小陳的每月經營系統 — 後端 API 與網站伺服器
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -89,7 +89,7 @@ export function createApp({ dbFile = process.env.DATABASE_PATH || path.join(root
     res.json(saved);
   });
 
-  // 批次寫入（例如建立 30 天預設計畫）
+  // 批次寫入（例如建立每月預設計畫）
   app.post('/api/data/:collection/batch', requireUser, checkCollection, (req, res) => {
     const list = Array.isArray(req.body?.records) ? req.body.records : null;
     if (!list) return res.status(400).json({ error: '資料格式錯誤' });
@@ -177,7 +177,7 @@ export function createApp({ dbFile = process.env.DATABASE_PATH || path.join(root
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT) || 8787;
   createApp().listen(port, () => {
-    console.log(`小陳的 30 天經營系統已啟動：http://localhost:${port}`);
+    console.log(`小陳的每月經營系統已啟動：http://localhost:${port}`);
     console.log(aiConfigured() ? `AI 已設定（模型 ${AI_MODEL}）` : 'AI 尚未設定：請在 .env 設定 ANTHROPIC_API_KEY');
   });
 }

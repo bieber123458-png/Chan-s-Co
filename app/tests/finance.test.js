@@ -61,20 +61,36 @@ test('月付不足以支付利息時判定無法還清', () => {
   assert.ok(payoffMonths(100000, 15, 5000).months > 20);
 });
 
-test('預設計畫：30 天、每週 3 支 Reels 與 2 篇輪播', () => {
-  const plan = generateDefaultPlan();
-  assert.ok(plan.every((t) => t.day >= 1 && t.day <= 30));
-  const week1 = plan.filter((t) => t.day <= 7);
+test('每月計畫：依月份天數產生，每週 3 支 Reels 與 2 篇輪播，月底有覆盤', async () => {
+  const { generateMonthPlan } = await import('../src/lib/plan.js');
+  const plan = generateMonthPlan({ start: '2026-10-15', length: 31, monthIndex: 0 });
+  assert.ok(plan.every((t) => t.date >= '2026-10-15' && t.date <= '2026-11-14'));
+  const week1 = plan.filter((t) => t.date <= '2026-10-21');
   assert.equal(week1.filter((t) => t.title.startsWith('發布 Reels')).length, 3);
   assert.equal(week1.filter((t) => t.title.startsWith('發布輪播')).length, 2);
+  assert.ok(plan.some((t) => t.date === '2026-11-14' && t.title.startsWith('本月覆盤')));
   assert.equal(new Set(plan.map((t) => t.id)).size, plan.length);
+  const m2 = generateMonthPlan({ start: '2026-11-15', length: 30, monthIndex: 1 });
+  assert.ok(!m2.some((t) => t.title.startsWith('簡介補一行')), '第一個月才有的任務不重複');
+  assert.notEqual(m2.find((t) => t.title.startsWith('發布 Reels')).title, plan.find((t) => t.title.startsWith('發布 Reels')).title, '主題每月輪替');
+  assert.ok(m2.every((t) => !plan.some((p) => p.id === t.id)), '不同月份的任務編號不重複');
 });
 
 test('沒動力模式最多 3 個任務，且包含一個最重要的任務', () => {
-  const tasks = generateDefaultPlan().filter((t) => t.day === 1);
+  const tasks = generateDefaultPlan('2026-10-01').filter((t) => t.day === 1);
   const picked = pickEssentialTasks(tasks);
   assert.ok(picked.length <= 3 && picked.length >= 1);
   assert.equal(picked[0].priority, 'high');
+});
+
+test('月份週期：從開始日起算一個月，月底自動調整', async () => {
+  const { cycleOf, cycleRange, addMonths } = await import('../src/lib/plan.js');
+  assert.equal(addMonths('2026-01-31', 1), '2026-02-28');
+  assert.deepEqual(cycleRange('2026-10-15', 0), { index: 0, start: '2026-10-15', end: '2026-11-14', length: 31 });
+  assert.equal(cycleOf('2026-10-15', '2026-11-14').day, 31);
+  assert.equal(cycleOf('2026-10-15', '2026-11-15').index, 1);
+  assert.equal(cycleOf('2026-10-15', '2027-03-20').index, 5);
+  assert.equal(cycleOf('2026-10-15', '2026-10-01').index, -1);
 });
 
 test('日期換算', () => {
@@ -115,23 +131,25 @@ test('IG 帳號會從網址中取出並去掉追蹤參數', async () => {
 });
 
 test('套用新版計畫：保留已完成、有紀錄與過去的任務', async () => {
-  const { planUpgrade } = await import('../src/lib/plan.js');
+  const { planUpgrade, cycleRange } = await import('../src/lib/plan.js');
+  const cycle = cycleRange('2026-10-01', 0);
   const old = [
-    { id: 'a', day: 1, title: 'x', done: false },
-    { id: 'b', day: 5, title: 'y', done: true },
-    { id: 'c', day: 5, title: 'z', done: false, result: '拍好了' },
-    { id: 'd', day: 6, title: 'w', done: false },
+    { id: 'a', date: '2026-10-01', title: 'x', done: false },
+    { id: 'b', date: '2026-10-05', title: 'y', done: true },
+    { id: 'c', date: '2026-10-05', title: 'z', done: false, result: '拍好了' },
+    { id: 'd', date: '2026-10-06', title: 'w', done: false },
+    { id: 'e', day: 7, title: '舊資料', done: false },
   ];
-  const r = planUpgrade(old, 5);
-  assert.deepEqual(r.removeIds, ['d']);
-  assert.ok(r.add.every((t) => t.day >= 5));
+  const r = planUpgrade(old, '2026-10-05', cycle, '2026-10-01');
+  assert.deepEqual(r.removeIds, ['d', 'e']);
+  assert.ok(r.add.every((t) => t.date >= '2026-10-05' && t.date <= cycle.end));
   assert.ok(r.add.some((t) => t.title.includes('互動貼紙')));
 });
 
 test('套用新版計畫：同一天已完成的發布任務不重複新增', async () => {
-  const { planUpgrade } = await import('../src/lib/plan.js');
-  const r = planUpgrade([{ id: 'r', day: 1, title: '發布 Reels：舊主題', done: true }], 1);
-  assert.equal(r.add.filter((t) => t.day === 1 && t.title.startsWith('發布 Reels')).length, 0);
+  const { planUpgrade, cycleRange } = await import('../src/lib/plan.js');
+  const r = planUpgrade([{ id: 'r', date: '2026-10-01', title: '發布 Reels：舊主題', done: true }], '2026-10-01', cycleRange('2026-10-01', 0), '2026-10-01');
+  assert.equal(r.add.filter((t) => t.date === '2026-10-01' && t.title.startsWith('發布 Reels')).length, 0);
 });
 
 test('輪播結構：頁數限制 5～10，含封面、總結與行動頁', async () => {

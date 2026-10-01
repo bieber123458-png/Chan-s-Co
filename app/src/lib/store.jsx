@@ -1,7 +1,8 @@
 // 全域資料狀態：載入、儲存、刪除都經過這裡，並統一處理錯誤提示
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { remote, local, newId, emptyData } from './api.js';
 import { DEFAULT_SETTINGS } from './stats.js';
+import { dateOfDay } from './plan.js';
 
 const Ctx = createContext(null);
 export const useStore = () => useContext(Ctx);
@@ -113,6 +114,16 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('已下載', 'success');
   }, [mode, cloud, toast]);
+
+  // 舊版（30 天計畫）的任務只有「第幾天」，一次性換算成實際日期
+  const migrated = useRef(false);
+  useEffect(() => {
+    if (migrated.current || !settings.startDate) return;
+    const legacy = data.tasks.filter((t) => !t.date && t.day);
+    if (!legacy.length) return;
+    migrated.current = true;
+    saveMany('tasks', legacy.map((t) => ({ ...t, date: dateOfDay(settings.startDate, t.day) })));
+  }, [data.tasks, settings.startDate, saveMany]);
 
   const value = {
     mode, status, user, data, settings, save, saveMany, remove, removeMany, saveSettings, importAll, ai, toast, downloadFile, logout: onLogout,

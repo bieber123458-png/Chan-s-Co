@@ -41,7 +41,7 @@ export default function Cards() {
           <div className="draw-card" key={history[0]?.id} style={{ background: cardBg(current.type) }}>
             <span className="tag" style={{ background: 'rgba(255,255,255,.25)', color: '#fff', alignSelf: 'flex-start' }}>{CARD_TYPES[current.type].name}</span>
             <p className="text">{current.text}</p>
-            <span className="tiny" style={{ opacity: 0.85 }}>小陳的 30 天經營系統</span>
+            <span className="tiny" style={{ opacity: 0.85 }}>小陳的每月經營系統</span>
           </div>
         ) : <Empty icon="❖" title={available > 0 ? '準備好了嗎？' : '再完成一些任務就能抽卡'}>{available > 0 ? '按下按鈕抽一張給今天的自己。' : `每完成任務都會累積積分，滿 ${POINTS_PER_DRAW} 分就能抽。`}</Empty>}
         <div className="row mt" style={{ justifyContent: 'center' }}>
