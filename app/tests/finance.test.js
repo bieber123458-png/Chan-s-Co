@@ -107,3 +107,9 @@ test('週覆盤不把未來的任務算成未完成', () => {
   assert.equal(s.tasks.total, 1);
   assert.equal(s.tasks.rate, 100);
 });
+
+test('IG 帳號會從網址中取出並去掉追蹤參數', async () => {
+  const { cleanIgHandle } = await import('../src/lib/stats.js');
+  assert.equal(cleanIgHandle('https://www.instagram.com/chan1201_?stkn=abc&utm_source=qr'), 'chan1201_');
+  assert.equal(cleanIgHandle('@chan1201_'), 'chan1201_');
+});

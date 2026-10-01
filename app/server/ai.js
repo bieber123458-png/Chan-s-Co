@@ -51,7 +51,9 @@ function profileBlock(settings) {
 - 個人目標：${s.goals || '（尚未填寫）'}
 - 月收入目標：${money(s.monthlyIncomeGoal)}（目標，非現況）
 - 團隊人數目標：${s.teamGoal} 人（目標，非現況）
-- 每月內容產出目標：${s.monthlyContentGoal} 篇`;
+- 每月內容產出目標：${s.monthlyContentGoal} 篇
+- Instagram 帳號：${s.igHandle ? `@${s.igHandle}` : '（未填）'}（系統無法讀取帳號內容，只能參考使用者描述與手動輸入的數據）
+- 帳號定位：${s.igPositioning || '（尚未填寫）'}`;
 }
 
 function recentTasksBlock(data, settings) {

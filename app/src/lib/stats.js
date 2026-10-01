@@ -4,6 +4,10 @@ import { round, sum, debtStatus } from './finance.js';
 
 export const POINTS_PER_DRAW = 30;
 
+// 取出 IG 帳號名稱（可貼網址或 @帳號），去掉網址參數
+export const cleanIgHandle = (v) => String(v || '').trim()
+  .replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').split(/[/?#]/)[0];
+
 export const DEFAULT_SETTINGS = {
   id: 'main',
   displayName: '小陳',
@@ -15,6 +19,8 @@ export const DEFAULT_SETTINGS = {
   emergencyMonths: 3,
   strategy: 'balanced',
   extraDebtPayment: 0,
+  igHandle: 'chan1201_',
+  igPositioning: '',
 };
 
 export const taskPoints = (task) => (task.done ? Number(task.points) || 0 : 0);

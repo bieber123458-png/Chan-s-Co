@@ -149,12 +149,18 @@ function Performance() {
   );
 }
 
-export default function Content() {
+export default function Content({ go }) {
+  const { settings } = useStore();
   const [tab, setTab] = useState('analyze');
   return (
     <>
       <PageHead eyebrow="CONTENT ADVISOR" title="AI 社群內容顧問" desc="寫內容前先健檢，發布後記錄數據，再根據真實表現決定下一篇。" />
       <AiNotice />
+      <div className="notice info small">
+        {settings.igHandle
+          ? <>經營帳號：<a href={`https://www.instagram.com/${settings.igHandle}/`} target="_blank" rel="noreferrer">@{settings.igHandle}</a>。{settings.igPositioning ? `定位：${settings.igPositioning}` : <>還沒填寫帳號定位，<a href="#/settings" onClick={(e) => { e.preventDefault(); go('settings'); }}>到設定補上</a>，AI 判斷「帳號契合性」會更準。</>}</>
+          : <>還沒設定 IG 帳號，<a href="#/settings" onClick={(e) => { e.preventDefault(); go('settings'); }}>到設定填寫</a>。</>}
+      </div>
       <div className="mb"><Chips value={tab} onChange={setTab} options={[['analyze', '內容健檢'], ['posts', '發布紀錄'], ['perf', '數據分析']]} /></div>
       {tab === 'analyze' && <Analyze />}
       {tab === 'posts' && <Posts />}

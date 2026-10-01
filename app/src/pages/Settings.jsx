@@ -3,6 +3,7 @@ import { useStore } from '../lib/store.jsx';
 import { PageHead, Card, Field, Confirm } from '../components/ui.jsx';
 import { COLLECTIONS } from '../lib/collections.js';
 import { toDateStr } from '../lib/plan.js';
+import { cleanIgHandle } from '../lib/stats.js';
 
 const CSV_SETS = {
   transactions: ['收支紀錄', ['date', 'type', 'category', 'amount', 'note']],
@@ -37,14 +38,17 @@ const csvCell = (v) => {
 
 export default function Settings() {
   const { data, settings, saveSettings, importAll, mode, status, user, toast } = useStore();
-  const [f, setF] = useState({ displayName: settings.displayName, goals: settings.goals, emergencyMonths: settings.emergencyMonths });
+  const [f, setF] = useState({ displayName: settings.displayName, goals: settings.goals, emergencyMonths: settings.emergencyMonths, igHandle: settings.igHandle, igPositioning: settings.igPositioning });
   const [pending, setPending] = useState(null);
   const fileRef = useRef(null);
 
   const saveProfile = () => {
     const em = Number(f.emergencyMonths);
     if (!Number.isFinite(em) || em < 0 || em > 24) { toast('緊急預備金月數請輸入 0～24', 'error'); return; }
-    saveSettings({ displayName: f.displayName.trim() || '小陳', goals: f.goals, emergencyMonths: em });
+    const ig = cleanIgHandle(f.igHandle);
+    if (ig && !/^[A-Za-z0-9._]{1,30}$/.test(ig)) { toast('IG 帳號格式不正確（只能有英文、數字、底線與句點）', 'error'); return; }
+    setF({ ...f, igHandle: ig });
+    saveSettings({ displayName: f.displayName.trim() || '小陳', goals: f.goals, emergencyMonths: em, igHandle: ig, igPositioning: f.igPositioning });
   };
 
   const exportJson = () => {
@@ -83,6 +87,8 @@ export default function Settings() {
         <div className="form-grid">
           <Field label="稱呼"><input className="input" value={f.displayName} onChange={(e) => setF({ ...f, displayName: e.target.value })} /></Field>
           <Field label="緊急預備金目標（幾個月必要生活費）"><input className="input" type="number" min="0" max="24" value={f.emergencyMonths} onChange={(e) => setF({ ...f, emergencyMonths: e.target.value })} /></Field>
+          <Field label="Instagram 帳號" hint="可貼網址或 @帳號，系統只保留帳號名稱"><input className="input" value={f.igHandle} onChange={(e) => setF({ ...f, igHandle: e.target.value })} placeholder="chan1201_" /></Field>
+          <Field label="帳號定位（AI 分析內容時會參考）" full hint="例如：美業經營教學，幫美業新手做出有預約的 IG；主要受眾是剛開店 1～3 年的美睫美甲師"><textarea className="input" rows={2} value={f.igPositioning} onChange={(e) => setF({ ...f, igPositioning: e.target.value })} /></Field>
           <Field label="個人目標（AI 每次都會參考）" full><textarea className="input" rows={4} value={f.goals} onChange={(e) => setF({ ...f, goals: e.target.value })} /></Field>
         </div>
         <button className="btn" onClick={saveProfile}>儲存設定</button>
@@ -96,7 +102,7 @@ export default function Settings() {
         )}
         <div className="small">
           <div>AI 狀態：{mode !== 'remote' ? '無法使用（沒有後端）' : status?.aiConfigured ? `已設定（模型 ${status.aiModel}）` : '尚未設定 ANTHROPIC_API_KEY'}</div>
-          <div>Instagram：未連接。社群數據需手動輸入。</div>
+          <div>Instagram：{settings.igHandle ? <>@{settings.igHandle}（<a href={`https://www.instagram.com/${settings.igHandle}/`} target="_blank" rel="noreferrer">開啟帳號</a>）・</> : null}未連接後台，社群數據需手動輸入。</div>
           <div>目前共有 {count} 筆資料。</div>
         </div>
       </Card>
