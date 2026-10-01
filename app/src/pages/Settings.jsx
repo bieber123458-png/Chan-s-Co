@@ -84,14 +84,14 @@ export default function Settings() {
 
   const exportJson = () => {
     const payload = { app: 'xiaochen-30-day-system', version: 1, exportedAt: new Date().toISOString(), data };
-    downloadFile(`每月經營系統備份-${toDateStr()}.json`, JSON.stringify(payload, null, 2), 'application/json');
+    downloadFile(`xiaochen-backup-${toDateStr()}.json`, JSON.stringify(payload, null, 2), 'application/json');
   };
 
   const exportCsv = (key) => {
-    const [name, cols] = CSV_SETS[key];
+    const [, cols] = CSV_SETS[key];
     const rows = [cols.join(','), ...data[key].map((r) => cols.map((c) => csvCell(r[c])).join(','))];
     // 加上 BOM，Excel 開啟中文才不會亂碼
-    downloadFile(`${name}-${toDateStr()}.csv`, '﻿' + rows.join('\n'), 'text/csv;charset=utf-8');
+    downloadFile(`xiaochen-${key}-${toDateStr()}.csv`, '﻿' + rows.join('\n'), 'text/csv;charset=utf-8');
   };
 
   const onFile = async (e) => {
@@ -142,7 +142,7 @@ export default function Settings() {
       </Card>
 
       <Card title="匯出備份">
-        <p className="small muted mb">JSON 是完整備份，可以用來還原；CSV 方便用 Excel 或 Google 試算表查看。</p>
+        <p className="small muted mb">JSON 是完整備份，可以用來還原；CSV 方便用 Excel 或 Google 試算表查看。<br />想請 Claude 分析整體狀況：把 JSON 備份檔上傳到任何一個 Claude 新對話，請它「分析我這個月的經營狀況並給下個月建議」。</p>
         <button className="btn" onClick={exportJson}>下載完整 JSON 備份</button>
         <div className="chips mt">
           {Object.entries(CSV_SETS).map(([k, [name]]) => (
