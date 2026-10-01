@@ -4,11 +4,19 @@ import { useStore } from '../lib/store.jsx';
 import { Markdown } from '../lib/markdown.jsx';
 import { fmtDateTime } from '../lib/format.js';
 
+// 可使用 AI 與雲端同步的 Claude 版網址
+export const CLAUDE_VERSION_URL = 'https://claude.ai/artifact/F2PQFSr8zmMLUrR6tYB7SS';
+
 export function AiNotice() {
   const { mode, status } = useStore();
   if (mode === 'cloud') return null;
   if (mode !== 'remote') {
-    return <div className="notice warn">目前是<strong>本機模式</strong>（沒有連到後端伺服器），AI 功能無法使用，資料只存在這個瀏覽器。請依 README 啟動伺服器。</div>;
+    return (
+      <div className="notice warn">
+        目前是<strong>網頁版</strong>：AI 功能無法使用，資料只存在這個瀏覽器（換裝置看不到，請定期在「設定與備份」下載備份）。
+        要用 AI、跨裝置同步，請打開 <a href={CLAUDE_VERSION_URL} target="_blank" rel="noreferrer">Claude 版</a>（需登入 Claude）。
+      </div>
+    );
   }
   if (!status?.aiConfigured) {
     return <div className="notice warn"><strong>AI 尚未設定。</strong>請在伺服器的環境變數設定 <code>ANTHROPIC_API_KEY</code> 後重新啟動，AI 建議才會真正運作。其他功能可以正常使用。</div>;
