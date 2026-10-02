@@ -198,3 +198,26 @@ test('可用餘額會先扣掉本月還沒繳的最低應繳', async () => {
   assert.deepEqual(budgetSuggestion({ income: 42000, fixed: 16800, minDue: 3000, variable: 9600 }), { maxSave: 12600, suggested: 7500, estimated: true });
   assert.equal(budgetSuggestion({ income: 42000, fixed: 0, minDue: 3000, variable: 0 }).suggested, 7800, '沒有支出資料時用保守的兩成');
 });
+
+test('財務診斷：找出超支項目、衝動消費，並調整下月預算', async () => {
+  const { diagnoseMonth } = await import('../src/lib/finance.js');
+  const data = {
+    transactions: [
+      { date: '2026-08-01', type: 'income', amount: 42000 },
+      { date: '2026-08-02', type: 'essential', amount: 4800, budgetItem: 'ins' },
+      { date: '2026-08-03', type: 'nonessential', group: 'variable', amount: 3000, impulse: true },
+      { date: '2026-08-04', type: 'essential', group: 'variable', amount: 6000 },
+    ],
+    deposits: [{ date: '2026-08-05', goalId: 'g', amount: 4000 }],
+    debts: [], debtPayments: [], savingsGoals: [],
+    budgets: [{ id: 'b-2026-08', saving: 8000, items: [{ id: 'ins', name: '保險', group: 'fixed', amount: 1200 }, { id: 'food', name: '餐費', group: 'variable', amount: 7000 }] }],
+  };
+  const d = diagnoseMonth(data, '2026-08');
+  assert.match(d.headline, /沒有全部完成/);
+  assert.ok(d.attention.some((x) => x.title.includes('保險') && x.title.includes('3,600')));
+  assert.ok(d.attention.some((x) => x.title.includes('衝動消費')));
+  assert.ok(d.attention.some((x) => x.title.includes('儲蓄還差 $4,000')));
+  assert.ok(d.detail.some((x) => x.includes('低於預算 $1,000')));
+  assert.equal(d.nextItems.find((i) => i.name === '保險').amount, 4800);
+  assert.equal(d.nextItems.find((i) => i.name === '餐費').amount, 7000);
+});

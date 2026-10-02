@@ -3,7 +3,7 @@ import { useStore } from '../lib/store.jsx';
 import { PageHead, Card, Empty, Chips, Confirm, Stat, Progress, Field } from '../components/ui.jsx';
 import RecordForm, { blankFrom } from '../components/RecordForm.jsx';
 import { AiNotice, AiPanel } from '../components/AiPanel.jsx';
-import { BalanceHero, ReminderCenter, SetupChecklist, MonthSummary, BudgetPlanner } from '../components/MoneyPanels.jsx';
+import { BalanceHero, ReminderCenter, SetupChecklist, MonthSummary, BudgetPlanner, Diagnosis } from '../components/MoneyPanels.jsx';
 import { fmtMoney, fmtShortDate } from '../lib/format.js';
 import {
   TX_TYPES, INCOME_CATEGORIES, BUDGET_GROUPS, budgetFor, STRATEGIES, monthlySummary, debtStatus, splitPayment, payoffMonths, goalProgress, avgEssential, monthOf, round, sum,
@@ -336,13 +336,16 @@ function Savings() {
 
 export default function Finance() {
   const [tab, setTab] = useState('overview');
+  const [budgetMonth, setBudgetMonth] = useState(null);
+  const goBudget = (m) => { setBudgetMonth(m); setTab('budget'); window.scrollTo(0, 0); };
   return (
     <>
       <PageHead eyebrow="MONEY" title="存錢與負債管理" desc="先照顧好生活費與最低應繳，再一步一步存錢、還債。" />
       <AiNotice />
-      <div className="mb"><Chips value={tab} onChange={(t) => { setTab(t); window.scrollTo(0, 0); }} options={[['overview', '總覽'], ['budget', '預算'], ['tx', '收支紀錄'], ['debts', '負債'], ['savings', '存錢']]} /></div>
+      <div className="mb"><Chips value={tab} onChange={(t) => { setTab(t); window.scrollTo(0, 0); }} options={[['overview', '總覽'], ['budget', '預算'], ['diag', '診斷'], ['tx', '收支紀錄'], ['debts', '負債'], ['savings', '存錢']]} /></div>
       {tab === 'overview' && <Overview go={(t) => { setTab(t); window.scrollTo(0, 0); }} />}
-      {tab === 'budget' && <BudgetPlanner />}
+      {tab === 'budget' && <BudgetPlanner key={budgetMonth || 'now'} initialMonth={budgetMonth} />}
+      {tab === 'diag' && <Diagnosis goBudget={goBudget} />}
       {tab === 'tx' && <Transactions />}
       {tab === 'debts' && <Debts />}
       {tab === 'savings' && <Savings />}

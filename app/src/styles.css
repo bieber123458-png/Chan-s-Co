@@ -347,3 +347,19 @@ tr:last-child td { border-bottom: 0; }
   background: var(--ivory); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 18px; box-shadow: var(--shadow);
 }
 @media (min-width: 861px) { .sticky-left { bottom: 16px; margin-right: 180px; } }
+
+/* ---------- 快速記帳 ---------- */
+.seg { display: flex; background: var(--tea-soft); border-radius: 12px; padding: 4px; gap: 4px; }
+.seg button { flex: 1; border: 0; background: none; border-radius: 9px; padding: 9px 6px; font-size: 15px; cursor: pointer; color: var(--muted); min-height: 40px; }
+.seg button.on { background: var(--tea); color: #fff; font-weight: 600; }
+.amount-box { background: var(--ivory-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; text-align: center; margin-bottom: 14px; }
+.amount-box .cur { font-size: 30px; color: var(--tea); font-weight: 700; }
+.amount-input { border: 0; background: none; font-size: 44px; font-weight: 700; width: 70%; text-align: center; outline: none; font-family: var(--serif); color: var(--ink); }
+.scroll-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.scroll-chips .chip { flex-shrink: 0; }
+
+/* ---------- 診斷 ---------- */
+.diag-card { background: #fffaf5; border: 1px solid #efd9c4; border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.diag-card.good { background: var(--ok-soft); border-color: #cfdec8; }
+.diag-card.good h3 { color: #456840; }
+.diag-headline { font-size: 22px; margin-top: 6px; color: var(--ink); text-wrap: balance; }

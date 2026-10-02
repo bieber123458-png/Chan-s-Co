@@ -177,6 +177,8 @@ export const budgetFor = (data, month) => (data.budgets || []).find((b) => b.id 
 export function txGroup(tx, budget) {
   const item = budget?.items?.find((i) => i.id === tx.budgetItem);
   if (item) return item.group;
+  if (tx.type === 'business') return 'business';
+  if (tx.group === 'fixed' || tx.group === 'variable') return tx.group;
   return { essential: 'fixed', nonessential: 'variable', business: 'business' }[tx.type] || null;
 }
 
@@ -260,4 +262,76 @@ function addDaysStr(s, n) {
   const [y, m, d] = s.split('-').map(Number);
   const dt = new Date(y, m - 1, d + n);
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+// ---------------- 每月財務診斷（只根據已記錄的資料） ----------------
+const ntd = (n) => `$${Math.round(Number(n) || 0).toLocaleString('zh-TW')}`;
+const ceil100 = (n) => Math.ceil((Number(n) || 0) / 100) * 100;
+
+export function diagnoseMonth(data, month) {
+  const a = availableBalance(data, month);
+  const b = budgetFor(data, month);
+  const t = budgetTotals(b);
+  const act = budgetActuals(data, month, b);
+  const tx = (data.transactions || []).filter((x) => monthOf(x.date) === month && x.type !== 'income');
+  const impulse = round(sum(tx.filter((x) => x.impulse), (x) => x.amount));
+  const temporary = round(sum(tx.filter((x) => x.temporary && !x.impulse), (x) => x.amount));
+  const wants = round(sum(tx.filter((x) => x.type === 'nonessential'), (x) => x.amount));
+  const savingTarget = Number(b?.saving) || sum(data.savingsGoals || [], (g) => g.monthlyAmount) || 0;
+  const overItems = (b?.items || [])
+    .map((i) => ({ ...i, actual: act.byItem[i.id] || 0 }))
+    .filter((i) => i.actual > i.amount)
+    .sort((x, y) => (y.actual - y.amount) - (x.actual - x.amount));
+
+  const fixedOver = t.fixed ? round(act.fixed - t.fixed) : 0;
+  const variableOver = t.variable ? round(act.variable - t.variable) : 0;
+  const regularVariable = round(act.variable - impulse - temporary);
+  const savedShort = savingTarget ? round(savingTarget - a.saved) : 0;
+  const planDone = !!b && fixedOver <= 0 && variableOver <= 0 && savedShort <= 0;
+
+  let headline;
+  if (!a.hasData) headline = '這個月還沒有足夠的紀錄，暫時無法診斷。';
+  else if (a.afterDue < 0) headline = `本月有現金缺口 ${ntd(-a.afterDue)}，需要先處理。`;
+  else if (!b) headline = '本月沒有現金缺口，但還沒編預算，無法比對原訂安排。';
+  else if (planDone) headline = '本月沒有現金缺口，原訂的財務安排都完成了。';
+  else headline = '本月沒有現金缺口，但原訂財務安排沒有全部完成。';
+
+  const detail = [];
+  if (fixedOver > 0) detail.push(`固定支出超出原安排 ${ntd(fixedOver)}`);
+  if (variableOver > 0) {
+    detail.push(`變動支出超出原安排 ${ntd(variableOver)}`);
+    if (impulse + temporary > 0) {
+      const diff = round(t.variable - regularVariable);
+      detail.push(`扣除臨時與衝動消費後，日常變動支出${diff >= 0 ? `低於預算 ${ntd(diff)}` : `仍超出 ${ntd(-diff)}`}`);
+    }
+  }
+
+  const attention = [];
+  for (const i of overItems.slice(0, 3)) attention.push({ title: `「${i.name}」超出預算 ${ntd(i.actual - i.amount)}`, detail: `預算 ${ntd(i.amount)}，本月實際 ${ntd(i.actual)}。如果是週期性支出（例如保險、年費），可以每月先分攤存起來。` });
+  if (impulse > 0) attention.push({ title: `衝動消費 ${ntd(impulse)}`, detail: `本月有 ${tx.filter((x) => x.impulse).length} 筆標記為衝動消費。可以試試想買時先放 48 小時再決定。` });
+  if (a.expenses > 0 && wants / a.expenses > 0.3) attention.push({ title: `「想要」佔支出 ${Math.round((wants / a.expenses) * 100)}%`, detail: `本月想要類支出 ${ntd(wants)}，超過三成。` });
+  if (savedShort > 0) attention.push({ title: `儲蓄還差 ${ntd(savedShort)}`, detail: `目標 ${ntd(savingTarget)}，實際 ${ntd(a.saved)}。` });
+  if (a.unpaidDue > 0) attention.push({ title: `還有 ${ntd(a.unpaidDue)} 待繳`, detail: '卡費或貸款最低應繳尚未記錄，繳完記得到「負債」記錄。' });
+
+  const good = [];
+  if (savingTarget && savedShort <= 0) good.push(`儲蓄達標：存了 ${ntd(a.saved)}（目標 ${ntd(savingTarget)}）。`);
+  else if (a.saved > 0) good.push(`這個月有存錢 ${ntd(a.saved)}。`);
+  if (t.variable && variableOver <= 0) good.push(`變動支出控制在預算內，還剩 ${ntd(-variableOver)}。`);
+  if (tx.length >= 10 && impulse === 0) good.push('記了 ' + tx.length + ' 筆支出，沒有衝動消費。');
+  const principal = sum((data.debtPayments || []).filter((p) => monthOf(p.date) === month), (p) => p.principal);
+  if (principal > 0) good.push(`還掉本金 ${ntd(principal)}。`);
+  if (!good.length && a.hasData) good.push(`持續記帳 ${tx.length} 筆，這是看清楚錢去哪的第一步。`);
+
+  const missing = [];
+  if (!b) missing.push('還沒編本月預算');
+  if (!tx.length) missing.push('沒有支出紀錄');
+  if (!(data.transactions || []).some((x) => monthOf(x.date) === month && x.type === 'income')) missing.push('沒有收入紀錄');
+
+  // 下月預算建議：超出的項目改成本月實際（取整到百），其他沿用
+  const nextItems = (b?.items || []).map((i) => {
+    const actual = act.byItem[i.id] || 0;
+    return actual > i.amount ? { ...i, amount: ceil100(actual), adjusted: true } : { ...i };
+  });
+
+  return { headline, detail, attention, good, missing, planDone, hasBudget: !!b, nextItems, savingTarget, a, act, t, impulse, temporary, wants };
 }

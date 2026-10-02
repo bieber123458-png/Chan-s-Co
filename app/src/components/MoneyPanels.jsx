@@ -7,7 +7,7 @@ import { fmtMoney } from '../lib/format.js';
 import { toDateStr } from '../lib/plan.js';
 import {
   BUDGET_GROUPS, availableBalance, budgetActuals, budgetFor, budgetId, budgetSuggestion, budgetTotals,
-  financeReminders, monthlySummary, prevMonth, round, sum, goalProgress,
+  financeReminders, monthlySummary, prevMonth, round, sum, goalProgress, diagnoseMonth,
 } from '../lib/finance.js';
 
 const monthLabel = (m) => `${Number(m.slice(5, 7))} 月`;
@@ -108,9 +108,9 @@ export function MonthSummary({ month }) {
 }
 
 // ---------- 每月預算（四步驟） ----------
-export function BudgetPlanner() {
+export function BudgetPlanner({ initialMonth }) {
   const { data, save, toast } = useStore();
-  const [month, setMonth] = useState(toDateStr().slice(0, 7));
+  const [month, setMonth] = useState(initialMonth || toDateStr().slice(0, 7));
   const existing = budgetFor(data, month);
   const prev = budgetFor(data, prevMonth(month));
   const prevSummary = monthlySummary(data, prevMonth(month));
@@ -273,6 +273,89 @@ function BudgetEditor({ month, setMonth, existing, prev, prevSummary, prevAct, s
           <button className="btn" disabled={!income || left < 0} onClick={finish}>完成本月預算</button>
         </div>
       )}
+    </>
+  );
+}
+
+const nextMonthOf = (m) => {
+  const [y, mo] = m.split('-').map(Number);
+  const d = new Date(y, mo, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+// ---------- 每月財務診斷 ----------
+export function Diagnosis({ goBudget }) {
+  const { data, save, toast } = useStore();
+  const [month, setMonth] = useState(toDateStr().slice(0, 7));
+  const [showData, setShowData] = useState(false);
+  const d = diagnoseMonth(data, month);
+  const next = nextMonthOf(month);
+  const nextBudget = budgetFor(data, next);
+
+  const planNext = async () => {
+    if (nextBudget) { goBudget(next); return; }
+    const ok = await save('budgets', {
+      id: budgetId(next), month: next,
+      income: d.a.income || Number(budgetFor(data, month)?.income) || '',
+      saving: d.savingTarget || '',
+      items: d.nextItems.map(({ adjusted, ...i }) => ({ ...i, id: newId() })), // eslint-disable-line no-unused-vars
+      done: false,
+    }, { silent: true });
+    if (ok) { toast(`已建立 ${monthLabel(next)}預算草稿，超支的項目已調整`, 'success'); goBudget(next); }
+  };
+
+  return (
+    <>
+      <div className="row mb"><Field label="診斷月份"><input className="input" type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} /></Field></div>
+      {d.missing.length > 0 && <div className="notice warn small"><strong>資料不足：</strong>{d.missing.join('、')}。以下只根據已記錄的資料。</div>}
+      <div className="diag-card">
+        <div className="eyebrow">本月最後結果</div>
+        <h2 className="diag-headline">{d.headline}</h2>
+        {d.detail.length > 0 && <p className="small muted mt">{d.detail.join('；')}。</p>}
+        {d.attention.length > 0 && (
+          <>
+            <hr className="divider" />
+            <div className="eyebrow">最值得注意</div>
+            {d.attention.map((x) => (
+              <div key={x.title} className="list-item"><strong>{x.title}</strong><div className="small muted">{x.detail}</div></div>
+            ))}
+          </>
+        )}
+      </div>
+      <div className="diag-card">
+        <div className="eyebrow">下一步</div>
+        <h3 style={{ marginTop: 4 }}>把本月重點帶進下月安排</h3>
+        {d.hasBudget ? (
+          <>
+            {d.nextItems.some((i) => i.adjusted) && <p className="small muted mt">超支的項目會改成本月實際金額：{d.nextItems.filter((i) => i.adjusted).map((i) => `${i.name} ${fmtMoney(i.amount)}`).join('、')}</p>}
+            <button className="btn block mt" onClick={planNext}>{nextBudget ? `查看 ${monthLabel(next)}預算` : `建立 ${monthLabel(next)}預算`}</button>
+          </>
+        ) : <button className="btn block mt" onClick={() => goBudget(month)}>先編 {monthLabel(month)}預算</button>}
+      </div>
+      <Card title={<div><h3>查看本月數據</h3><div className="tiny muted">預算與實際、消費習慣</div></div>} action={<button className="btn ghost sm" onClick={() => setShowData(!showData)}>{showData ? '收合 ▲' : '展開 ▼'}</button>}>
+        {showData && (
+          <div className="table-wrap"><table>
+            <tbody>
+              <tr><td>收入</td><td className="num">{fmtMoney(d.a.income)}</td></tr>
+              <tr><td>固定支出（預算）</td><td className="num">{fmtMoney(d.act.fixed)}（{fmtMoney(d.t.fixed)}）</td></tr>
+              <tr><td>變動支出（預算）</td><td className="num">{fmtMoney(d.act.variable)}（{fmtMoney(d.t.variable)}）</td></tr>
+              <tr><td>事業成本（預算）</td><td className="num">{fmtMoney(d.act.business)}（{fmtMoney(d.t.business)}）</td></tr>
+              <tr><td>想要類支出</td><td className="num">{fmtMoney(d.wants)}</td></tr>
+              <tr><td>衝動消費／臨時性支出</td><td className="num">{fmtMoney(d.impulse)}／{fmtMoney(d.temporary)}</td></tr>
+              <tr><td>儲蓄（目標）</td><td className="num">{fmtMoney(d.a.saved)}（{fmtMoney(d.savingTarget)}）</td></tr>
+              <tr><td>還款／待繳</td><td className="num">{fmtMoney(d.a.debtPaid)}／{fmtMoney(d.a.unpaidDue)}</td></tr>
+              <tr><td>可用餘額</td><td className="num">{fmtMoney(d.a.afterDue)}</td></tr>
+            </tbody>
+          </table></div>
+        )}
+      </Card>
+      {d.good.length > 0 && (
+        <div className="diag-card good">
+          <h3>本月做得好的地方</h3>
+          {d.good.map((g) => <div key={g} className="small mt">✓ {g}</div>)}
+        </div>
+      )}
+      <p className="tiny muted" style={{ textAlign: 'center' }}>診斷依你輸入的資料自動整理，僅供參考，不構成專業財務建議。想要更深入的分析，可以到「總覽」用 AI 財務建議。</p>
     </>
   );
 }
