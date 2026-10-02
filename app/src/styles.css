@@ -363,3 +363,31 @@ tr:last-child td { border-bottom: 0; }
 .diag-card.good { background: var(--ok-soft); border-color: #cfdec8; }
 .diag-card.good h3 { color: #456840; }
 .diag-headline { font-size: 22px; margin-top: 6px; color: var(--ink); text-wrap: balance; }
+
+/* ---------- 記帳：快訊／更多／月曆 ---------- */
+.greet { margin: 4px 0 14px; }
+.greet h2 { margin: 2px 0 0; font-size: 24px; }
+.tip-card { position: relative; background: var(--tea-soft); border-radius: var(--radius); padding: 16px 44px 16px 18px; margin-bottom: 14px; }
+.tip-card .close { position: absolute; top: 8px; right: 8px; }
+.scope-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.scope-bar .chips { margin: 0; }
+.seg.kinds button { font-size: 14px; padding: 8px 2px; }
+.icon-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.icon-grid.shortcuts { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.icon-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--ivory); border-radius: var(--radius-sm); padding: 12px 4px; cursor: pointer; font-size: 13px; color: var(--ink); min-height: 76px; }
+.icon-tile:hover { border-color: var(--tea); }
+.icon-tile .ico { width: 36px; height: 36px; border-radius: 50%; background: var(--gold-soft); display: grid; place-items: center; font-size: 18px; }
+.shortcuts .icon-tile { font-size: 12px; padding: 10px 2px; }
+.month-status { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--ivory-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-head { text-align: center; font-size: 12px; color: var(--muted); padding: 4px 0; }
+.cal-day { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; min-height: 54px; padding: 6px 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--ivory); cursor: pointer; color: var(--ink); }
+.cal-day.sel { outline: 2px solid var(--tea); }
+.cal-day .n { font-size: 13px; font-weight: 600; }
+.cal-day .amt { font-size: 10px; color: var(--ink); overflow: hidden; max-width: 100%; text-overflow: ellipsis; }
+.cal-day .inc { position: absolute; top: 3px; right: 4px; font-size: 8px; color: var(--ok); }
+@media (max-width: 420px) {
+  .icon-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .icon-tile { font-size: 12px; }
+  .cal-day { min-height: 46px; }
+}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { splitPayment, debtStatus, monthlySummary, goalProgress, payoffMonths } from '../src/lib/finance.js';
+import { splitPayment, debtStatus, monthlySummary, goalProgress, payoffMonths, financeReminders } from '../src/lib/finance.js';
 import { generateDefaultPlan, pickEssentialTasks, dayOfDate, dateOfDay } from '../src/lib/plan.js';
 import { CARDS } from '../src/lib/cards.js';
 import { totalPoints, drawsAvailable, rangeStats } from '../src/lib/stats.js';
@@ -220,4 +220,49 @@ test('財務診斷：找出超支項目、衝動消費，並調整下月預算',
   assert.ok(d.detail.some((x) => x.includes('低於預算 $1,000')));
   assert.equal(d.nextItems.find((i) => i.name === '保險').amount, 4800);
   assert.equal(d.nextItems.find((i) => i.name === '餐費').amount, 7000);
+});
+
+test('帳戶、信用卡帳單、分期與帳目歸屬', async () => {
+  const { accountBalance, cardStatement, splitInstallments, scoped, savingSplit } = await import('../src/lib/finance.js');
+  const card = { id: 'ca', kind: 'credit', closingDay: 5, dueDay: 20, initialBalance: 0 };
+  const bank = { id: 'bk', kind: 'bank', initialBalance: 50000 };
+  const data = {
+    accounts: [card, bank],
+    transactions: [
+      { date: '2026-09-28', type: 'essential', amount: 1000, accountId: 'ca' },
+      { date: '2026-10-08', type: 'nonessential', amount: 500, accountId: 'ca' },
+      { date: '2026-10-01', type: 'income', amount: 30000, accountId: 'bk', owner: 'business' },
+    ],
+    transfers: [{ date: '2026-10-09', from: 'bk', to: 'ca', amount: 400 }],
+    savingsGoals: [{ id: 'g1' }, { id: 'g2', isSinking: true }],
+    deposits: [{ date: '2026-10-02', goalId: 'g1', amount: 3000 }, { date: '2026-10-03', goalId: 'g2', amount: 1200 }],
+  };
+  assert.equal(accountBalance(card, data), 1100);
+  assert.equal(accountBalance(bank, data), 50000 + 30000 - 400);
+  const st = cardStatement(card, data, '2026-10-12');
+  assert.equal(st.lastClose, '2026-10-05');
+  assert.equal(st.due, 600);
+  assert.equal(st.unbilled, 500);
+  assert.equal(st.dueDate, '2026-10-20');
+  const parts = splitInstallments({ id: 'x', date: '2026-01-31', amount: 1000, type: 'nonessential' }, 3);
+  assert.deepEqual(parts.map((p) => p.date), ['2026-01-31', '2026-02-28', '2026-03-31']);
+  assert.equal(parts.reduce((a, p) => a + p.amount, 0), 1000);
+  assert.equal(scoped(data, 'business').transactions.length, 1);
+  assert.equal(scoped(data, 'personal').transactions.length, 2);
+  assert.deepEqual(savingSplit(data, '2026-10'), { saving: 3000, sinking: 1200 });
+});
+
+test('信用卡卡費到期會出現在提醒中心', () => {
+  const data = {
+    transactions: [{ id: 't1', date: '2026-09-10', type: 'essential', amount: 3000, accountId: 'c1' }],
+    accounts: [{ id: 'c1', name: '國泰卡', kind: 'credit', initialBalance: 0, closingDay: 20, dueDay: 5 }],
+    transfers: [], debts: [], debtPayments: [], savingsGoals: [], deposits: [], budgets: [],
+  };
+  const list = financeReminders(data, '2026-10-02');
+  const r = list.find((x) => x.tab === 'cards');
+  assert.ok(r, '應該有卡費提醒');
+  assert.equal(r.level, 'warn');
+  assert.match(r.title, /3 天後/);
+  data.transfers.push({ id: 'p1', date: '2026-10-01', from: 'b1', to: 'c1', amount: 3000 });
+  assert.ok(!financeReminders(data, '2026-10-02').some((x) => x.tab === 'cards'), '繳完就不提醒');
 });

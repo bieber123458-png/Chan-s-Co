@@ -47,7 +47,11 @@ function ConnectBackend() {
 }
 
 const CSV_SETS = {
-  transactions: ['收支紀錄', ['date', 'type', 'category', 'amount', 'note']],
+  transactions: ['收支紀錄', ['date', 'type', 'owner', 'expenseKind', 'category', 'amount', 'payMethod', 'accountId', 'note']],
+  accounts: ['帳戶', ['id', 'name', 'kind', 'initialBalance', 'closingDay', 'dueDay']],
+  transfers: ['繳卡費紀錄', ['date', 'from', 'to', 'amount', 'note']],
+  wishlist: ['願望清單', ['name', 'price', 'status', 'coolUntil', 'decidedAt', 'reason']],
+  notes: ['財務筆記', ['date', 'text']],
   debts: ['負債清單', ['name', 'startBalance', 'apr', 'minPayment', 'dueDay', 'plannedPayment', 'note']],
   debtPayments: ['還款紀錄', ['date', 'debtId', 'total', 'principal', 'interest', 'extra', 'note']],
   savingsGoals: ['存錢目標', ['name', 'purpose', 'target', 'targetDate', 'monthlyAmount', 'isEmergency']],

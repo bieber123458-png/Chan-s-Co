@@ -246,6 +246,13 @@ export function financeReminders(data, today) {
     if (day > due) list.push({ level: 'err', title: `${debt.name} 本月還沒記錄還款`, detail: `繳款日 ${due} 日已過，最低應繳 ${Math.round(amount).toLocaleString('zh-TW')} 元。如果已經繳了，記得到「負債」記錄。`, tab: 'debts' });
     else if (due - day <= 7) list.push({ level: 'warn', title: `${debt.name} ${due - day === 0 ? '今天' : `${due - day} 天後`}到期`, detail: `最低應繳 ${Math.round(amount).toLocaleString('zh-TW')} 元，繳款日 ${due} 日。`, tab: 'debts' });
   }
+  for (const { card, st } of cardsDue(data, today)) {
+    if (!st.dueDate) continue;
+    const left = Math.round((new Date(st.dueDate) - new Date(today)) / 86400000);
+    const amt = Math.round(st.due).toLocaleString('zh-TW');
+    if (left < 0) list.push({ level: 'err', title: `${card.name} 卡費已過繳款日`, detail: `本期應繳 ${amt} 元，截止日 ${st.dueDate.slice(5)}。如果已經繳了，到「信用卡」按「繳卡費」記錄。`, tab: 'cards' });
+    else if (left <= 7) list.push({ level: 'warn', title: `${card.name} 卡費${left === 0 ? '今天' : ` ${left} 天後`}到期`, detail: `本期應繳 ${amt} 元。`, tab: 'cards' });
+  }
   if (!budgetFor(data, month)?.done) list.push({ level: 'info', title: '這個月的預算還沒編好', detail: '先決定收入怎麼分配，比較不會月底才發現超支。', tab: 'budget' });
   const deps = (data.deposits || []).filter((d) => monthOf(d.date) === month && d.kind !== 'withdraw');
   for (const g of data.savingsGoals || []) {
@@ -334,4 +341,136 @@ export function diagnoseMonth(data, month) {
   });
 
   return { headline, detail, attention, good, missing, planDone, hasBudget: !!b, nextItems, savingTarget, a, act, t, impulse, temporary, wants };
+}
+
+// ---------------- 帳目歸屬：個人／事業／家庭 ----------------
+export const SCOPES = { personal: '個人', business: '事業', family: '家庭' };
+export const txOwner = (t) => t.owner || (t.type === 'business' ? 'business' : 'personal');
+export const scopedBudgetId = (month, scope = 'personal') => (scope === 'personal' ? `b-${month}` : `b-${scope}-${month}`);
+
+// 只看某個帳目歸屬的資料；負債、存錢屬於個人
+export function scoped(data, scope = 'personal') {
+  const prefix = scope === 'personal' ? null : `b-${scope}-`;
+  return {
+    ...data,
+    transactions: (data.transactions || []).filter((t) => txOwner(t) === scope),
+    budgets: (data.budgets || [])
+      .filter((b) => (prefix ? b.id.startsWith(prefix) : /^b-\d{4}-\d{2}$/.test(b.id)))
+      .map((b) => (prefix ? { ...b, id: b.id.replace(prefix, 'b-') } : b)),
+    ...(scope === 'personal' ? {} : { debts: [], debtPayments: [], deposits: [], savingsGoals: [] }),
+  };
+}
+
+// ---------------- 帳戶與信用卡 ----------------
+export const ACCOUNT_KINDS = { cash: '現金', bank: '活存', credit: '信用卡', debit: '簽帳卡' };
+
+// 帳戶餘額：一般帳戶是「有多少錢」，信用卡是「欠多少錢」
+export function accountBalance(account, data) {
+  const tx = (data.transactions || []).filter((t) => t.accountId === account.id);
+  const tin = sum((data.transfers || []).filter((x) => x.to === account.id), (x) => x.amount);
+  const tout = sum((data.transfers || []).filter((x) => x.from === account.id), (x) => x.amount);
+  const income = sum(tx.filter((t) => t.type === 'income'), (t) => t.amount);
+  const spend = sum(tx.filter((t) => t.type !== 'income'), (t) => t.amount);
+  const start = Number(account.initialBalance) || 0;
+  if (account.kind === 'credit') return round(start + spend - income - tin + tout);
+  return round(start + income - spend + tin - tout);
+}
+
+const ymd = (y, m, d) => {
+  const last = new Date(y, m + 1, 0).getDate();
+  const dt = new Date(y, m, Math.min(d, last));
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+};
+
+// 信用卡帳單：最近一次結帳日、本期應繳（結帳日前刷的 − 結帳後已繳）、未出帳、繳款截止日
+export function cardStatement(card, data, today) {
+  const [y, m, d] = today.split('-').map(Number);
+  const closing = Number(card.closingDay) || 0;
+  const dueDay = Number(card.dueDay) || 0;
+  if (!closing) return null;
+  const lastClose = d > closing ? ymd(y, m - 1, closing) : ymd(y, m - 2, closing);
+  const tx = (data.transactions || []).filter((t) => t.accountId === card.id && t.type !== 'income');
+  const pays = (data.transfers || []).filter((x) => x.to === card.id);
+  const start = Number(card.initialBalance) || 0;
+  const billed = round(start + sum(tx.filter((t) => t.date <= lastClose), (t) => t.amount) - sum(pays.filter((p) => p.date <= lastClose), (p) => p.amount));
+  const paidSince = round(sum(pays.filter((p) => p.date > lastClose), (p) => p.amount));
+  const unbilled = round(sum(tx.filter((t) => t.date > lastClose), (t) => t.amount));
+  const [cy, cm] = lastClose.split('-').map(Number);
+  const dueDate = dueDay ? (dueDay > closing ? ymd(cy, cm - 1, dueDay) : ymd(cy, cm, dueDay)) : '';
+  return { lastClose, due: Math.max(0, round(billed - paidSince)), billed, paidSince, unbilled, dueDate };
+}
+
+// 本期所有信用卡待繳（用在可用餘額旁的提示）
+export function cardsDue(data, today) {
+  return (data.accounts || []).filter((a) => a.kind === 'credit')
+    .map((a) => ({ card: a, st: cardStatement(a, data, today) }))
+    .filter((x) => x.st && x.st.due > 0);
+}
+
+// 分期：把一筆刷卡拆成每月一筆
+export function splitInstallments(rec, n) {
+  const count = Math.max(1, Math.min(36, Math.floor(Number(n) || 1)));
+  if (count === 1) return [rec];
+  const base = Math.floor((rec.amount / count) * 100) / 100;
+  const groupId = rec.id || `inst-${Date.now()}`;
+  const [y, m, d] = rec.date.split('-').map(Number);
+  return Array.from({ length: count }, (_, i) => ({
+    ...rec,
+    id: `${groupId}-${i + 1}`,
+    date: ymd(y, m - 1 + i, d),
+    amount: i === count - 1 ? round(rec.amount - base * (count - 1)) : base,
+    installment: { group: groupId, index: i + 1, count, total: rec.amount },
+    note: `${rec.note ? `${rec.note}｜` : ''}分期 ${i + 1}/${count}`,
+  }));
+}
+
+// ---------------- 儲蓄與預存 ----------------
+// 存錢目標分兩種：一般儲蓄、預存（為之後的固定大筆支出先存，例如保險年繳、年費）
+export function savingSplit(data, month) {
+  const goals = data.savingsGoals || [];
+  const deps = (data.deposits || []).filter((d) => monthOf(d.date) === month);
+  const val = (d) => (d.kind === 'withdraw' ? -d.amount : Number(d.amount) || 0);
+  const sinkIds = new Set(goals.filter((g) => g.isSinking).map((g) => g.id));
+  return {
+    saving: round(sum(deps.filter((d) => !sinkIds.has(d.goalId)), val)),
+    sinking: round(sum(deps.filter((d) => sinkIds.has(d.goalId)), val)),
+  };
+}
+
+// ---------------- 願望清單 ----------------
+export const WISH_STATUS = { thinking: '考慮中', delayed: '已延後', cancelled: '已取消', bought: '已購買' };
+export function wishSummary(wishlist, month) {
+  const decided = (wishlist || []).filter((w) => monthOf(w.decidedAt || '') === month);
+  return {
+    saved: round(sum(decided.filter((w) => w.status === 'delayed' || w.status === 'cancelled'), (w) => w.price)),
+    bought: round(sum(decided.filter((w) => w.status === 'bought'), (w) => w.price)),
+  };
+}
+
+// ---------------- 分類明細：本月 vs 上月 ----------------
+export function categoryBreakdown(data, month, prev) {
+  const by = (m) => {
+    const out = {};
+    for (const t of data.transactions || []) {
+      if (monthOf(t.date) !== m || t.type === 'income') continue;
+      const k = t.category || '未分類';
+      out[k] = round((out[k] || 0) + Number(t.amount || 0));
+    }
+    return out;
+  };
+  const cur = by(month);
+  const last = by(prev);
+  return [...new Set([...Object.keys(cur), ...Object.keys(last)])]
+    .map((k) => ({ category: k, amount: cur[k] || 0, last: last[k] || 0, diff: round((cur[k] || 0) - (last[k] || 0)) }))
+    .sort((a, b) => b.amount - a.amount);
+}
+
+// 情緒與消費
+export function moodBreakdown(data, month) {
+  const out = {};
+  for (const t of data.transactions || []) {
+    if (monthOf(t.date) !== month || t.type === 'income' || !t.mood) continue;
+    out[t.mood] = round((out[t.mood] || 0) + Number(t.amount || 0));
+  }
+  return Object.entries(out).sort((a, b) => b[1] - a[1]);
 }

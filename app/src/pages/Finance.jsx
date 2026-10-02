@@ -4,9 +4,11 @@ import { PageHead, Card, Empty, Chips, Confirm, Stat, Progress, Field } from '..
 import RecordForm, { blankFrom } from '../components/RecordForm.jsx';
 import { AiNotice, AiPanel } from '../components/AiPanel.jsx';
 import { BalanceHero, ReminderCenter, SetupChecklist, MonthSummary, BudgetPlanner, Diagnosis } from '../components/MoneyPanels.jsx';
+import { MoreGrid, MORE_ITEMS, AccountsView, CardsView, LedgerView, CalendarView, WishlistView, NotesView } from '../components/MoneyMore.jsx';
 import { fmtMoney, fmtShortDate } from '../lib/format.js';
 import {
   TX_TYPES, INCOME_CATEGORIES, BUDGET_GROUPS, budgetFor, STRATEGIES, monthlySummary, debtStatus, splitPayment, payoffMonths, goalProgress, avgEssential, monthOf, round, sum,
+  SCOPES, scoped, txOwner, prevMonth, availableBalance,
 } from '../lib/finance.js';
 import { toDateStr } from '../lib/plan.js';
 
@@ -18,7 +20,10 @@ const EXPENSE_SUGGEST = {
 };
 
 const ALL_SUGGEST = [...new Set(Object.values(EXPENSE_SUGGEST).flat())];
-const txFields = (items) => [...TX_FIELDS, ...(items.length ? [{ key: 'budgetItem', label: '算在哪個預算項目（選填）', type: 'select', options: [['', '不指定（依類型自動歸類）'], ...items.map((i) => [i.id, `${BUDGET_GROUPS[i.group]?.name}｜${i.name}`])] }] : [])];
+const txFields = (items, accounts = []) => [...TX_FIELDS,
+  { key: 'owner', label: '帳目歸屬', type: 'select', options: Object.entries(SCOPES) },
+  ...(accounts.length ? [{ key: 'accountId', label: '帳戶', type: 'select', options: [['', '未指定'], ...accounts.map((a) => [a.id, a.name])] }] : []),
+  ...(items.length ? [{ key: 'budgetItem', label: '算在哪個預算項目（選填）', type: 'select', options: [['', '不指定（依類型自動歸類）'], ...items.map((i) => [i.id, `${BUDGET_GROUPS[i.group]?.name}｜${i.name}`])] }] : [])];
 const TX_FIELDS = [
   { key: 'date', label: '日期', type: 'date', required: true },
   { key: 'type', label: '類型', type: 'select', options: Object.entries(TX_TYPES) },
@@ -44,6 +49,7 @@ const GOAL_FIELDS = [
   { key: 'targetDate', label: '目標日期', type: 'date', default: '' },
   { key: 'monthlyAmount', label: '每月預計存入（元）', type: 'money' },
   { key: 'isEmergency', label: '緊急預備金', type: 'checkbox', checkLabel: '這是緊急預備金' },
+  { key: 'isSinking', label: '預存', type: 'checkbox', checkLabel: '這是預存（為之後的大筆支出先存，例如保險年繳、年費）' },
 ];
 
 const depositFields = (goals) => [
@@ -55,17 +61,84 @@ const depositFields = (goals) => [
   { key: 'note', label: '備註', type: 'text' },
 ];
 
-// ---------------- 總覽 ----------------
-function Overview({ go }) {
-  const { data, settings, saveSettings } = useStore();
+// ---------------- 快訊（首頁） ----------------
+const greeting = () => {
+  const h = new Date().getHours();
+  return h < 5 ? '夜深了' : h < 11 ? '早安' : h < 14 ? '午安' : h < 18 ? '下午好' : '晚安';
+};
+const SHORTCUTS = ['ledger', 'calendar', 'cards', 'savings', 'wishlist'];
+
+function Home({ go, scope, goBudget }) {
+  const { data: raw, settings, saveSettings } = useStore();
+  const data = scoped(raw, scope);
   const [month, setMonth] = useState(toDateStr().slice(0, 7));
+  const cur = toDateStr().slice(0, 7);
+  const last = prevMonth(cur);
+  const lastCount = data.transactions.filter((t) => monthOf(t.date) === last).length;
+  const lastA = availableBalance(data, last);
+  const hasBudget = !!budgetFor(data, cur);
+  const tipKey = `${scope}:${cur}`;
+  const showTip = lastCount > 0 && settings.tipDismissed !== tipKey;
+  const m = monthlySummary(data, month);
+  const goalsSaved = sum(raw.savingsGoals, (g) => goalProgress(g, raw.deposits).saved);
+  const goalsTarget = sum(raw.savingsGoals, (g) => g.target);
+  return (
+    <>
+      <div className="greet">
+        <div className="eyebrow">{Number(cur.slice(5))} 月・{SCOPES[scope]}帳</div>
+        <h2>{greeting()}，{settings.displayName || '小陳'}</h2>
+      </div>
+      {showTip && (
+        <div className="tip-card">
+          <button type="button" className="icon-btn close" aria-label="關閉提示" onClick={() => saveSettings({ tipDismissed: tipKey }, { silent: true })}>✕</button>
+          <div className="small">上個月你記了 <strong>{lastCount}</strong> 筆帳，{lastA.saved > 0 ? <>存了 <strong>{fmtMoney(lastA.saved)}</strong></> : <>收支結餘 <strong>{fmtMoney(round(lastA.income - lastA.expenses))}</strong></>}。這個月繼續？</div>
+          {hasBudget
+            ? <button className="btn sm mt" onClick={() => go('diag')}>看上個月診斷</button>
+            : <button className="btn sm mt" onClick={() => goBudget(cur)}>設定 {Number(cur.slice(5))} 月預算</button>}
+        </div>
+      )}
+      <div className="row mb"><Field label="查看月份"><input className="input" type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} /></Field></div>
+      <BalanceHero month={month} go={go} scope={scope} />
+      <div className="icon-grid shortcuts mb">
+        {MORE_ITEMS.filter(([k2]) => SHORTCUTS.includes(k2)).map(([k2, icon, label]) => (
+          <button key={k2} type="button" className="icon-tile" onClick={() => go(k2)}><span className="ico">{icon}</span><span>{label}</span></button>
+        ))}
+      </div>
+      {scope === 'personal' && month === cur && <SetupChecklist go={go} />}
+      {scope === 'personal' && month === cur && <ReminderCenter go={go} />}
+      <MonthSummary month={month} scope={scope} />
+      {scope === 'personal' ? (
+        <div className="grid grid-3 mb">
+          <Stat label="剩餘債務" value={fmtMoney(m.remainingDebt)} sub={`本金（利息另計）・本月還本金 ${fmtMoney(m.debtPrincipal)}`} />
+          <Stat label="存錢進度" value={goalsTarget ? `${Math.round((goalsSaved / goalsTarget) * 100)}%` : '—'} sub={goalsTarget ? `${fmtMoney(goalsSaved)}／${fmtMoney(goalsTarget)}` : '尚未設定存錢目標'} />
+          <Stat label="事業淨收入" value={fmtMoney(monthlySummary(raw, month).businessNet)} sub="收入－事業成本（不是利潤全貌）" />
+        </div>
+      ) : (
+        <p className="tiny muted mb">{SCOPES[scope]}帳只看歸屬「{SCOPES[scope]}」的收支與預算；負債與存錢目標放在個人帳。</p>
+      )}
+    </>
+  );
+}
+
+function AiView() {
+  return (
+    <Card title="AI 財務建議">
+      <p className="small muted">AI 只會看你已記錄的收支、負債與存錢資料，優先考慮必要生活費、最低應繳與緊急預備金。</p>
+      <AiPanel kind="finance" refId="finance" label="根據我的收支給建議" buildBody={(x) => ({ input: x, summary: '財務建議' })}
+        inputPlaceholder="（選填）想問的問題，例如：這個月多出 5,000 元，要先還卡債還是存起來？" />
+    </Card>
+  );
+}
+
+// ---------------- 還款策略 ----------------
+function StrategyView() {
+  const { data, settings, saveSettings } = useStore();
+  const month = toDateStr().slice(0, 7);
   const [customExtra, setCustomExtra] = useState('');
   const m = monthlySummary(data, month);
   const ess = avgEssential(data);
   const emergencyTarget = ess ? ess * (settings.emergencyMonths || 3) : null;
   const emergencySaved = sum(data.savingsGoals.filter((g) => g.isEmergency), (g) => goalProgress(g, data.deposits).saved);
-  const goalsSaved = sum(data.savingsGoals, (g) => goalProgress(g, data.deposits).saved);
-  const goalsTarget = sum(data.savingsGoals, (g) => g.target);
   const strategy = STRATEGIES[settings.strategy] ? settings.strategy : 'balanced';
   const extra = Number(settings.extraDebtPayment) || 0;
 
@@ -83,19 +156,6 @@ function Overview({ go }) {
 
   return (
     <>
-      <div className="row mb">
-        <Field label="查看月份"><input className="input" type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} /></Field>
-      </div>
-      <BalanceHero month={month} go={go} />
-      {month === toDateStr().slice(0, 7) && <SetupChecklist go={go} />}
-      {month === toDateStr().slice(0, 7) && <ReminderCenter go={go} />}
-      <MonthSummary month={month} />
-      <div className="grid grid-3 mb">
-        <Stat label="剩餘債務" value={fmtMoney(m.remainingDebt)} sub={`本金（利息另計）・本月還本金 ${fmtMoney(m.debtPrincipal)}`} />
-        <Stat label="存錢進度" value={goalsTarget ? `${Math.round((goalsSaved / goalsTarget) * 100)}%` : '—'} sub={goalsTarget ? `${fmtMoney(goalsSaved)}／${fmtMoney(goalsTarget)}` : '尚未設定存錢目標'} />
-        <Stat label="事業淨收入" value={fmtMoney(m.businessNet)} sub="收入－事業成本（不是利潤全貌）" />
-      </div>
-
       <Card title="還款與存錢策略">
         <Chips value={strategy} onChange={(k) => saveSettings({ strategy: k })} options={Object.entries(STRATEGIES).map(([k, s]) => [k, s.name])} />
         <div className="grid grid-3 mt">
@@ -129,47 +189,24 @@ function Overview({ go }) {
         )}
       </Card>
 
-      <Card title="AI 財務建議">
-        <p className="small muted">AI 只會看你已記錄的收支、負債與存錢資料，優先考慮必要生活費、最低應繳與緊急預備金。</p>
-        <AiPanel kind="finance" refId="finance" label="根據我的收支給建議" buildBody={(x) => ({ input: x, summary: '財務建議' })}
-          inputPlaceholder="（選填）想問的問題，例如：這個月多出 5,000 元，要先還卡債還是存起來？" />
-      </Card>
     </>
   );
 }
 
-// ---------------- 收支 ----------------
-function Transactions() {
-  const { data, save, remove } = useStore();
-  const [month, setMonth] = useState(toDateStr().slice(0, 7));
-  const [form, setForm] = useState(null);
-  const [confirm, setConfirm] = useState(null);
-  const list = data.transactions.filter((t) => monthOf(t.date) === month).sort((a, b) => b.date.localeCompare(a.date));
-  const m = monthlySummary(data, month);
 
+// ---------------- 記帳明細（含編輯） ----------------
+function Ledger({ scope }) {
+  const { data, save } = useStore();
+  const [form, setForm] = useState(null);
   return (
-    <Card title="收支紀錄" action={<button className="btn sm" onClick={() => setForm(blankFrom(TX_FIELDS, { type: 'essential' }))}>＋ 新增收支</button>}>
-      <div className="notice info small">債務還款請到「負債」分頁記錄，系統會自動拆成本金與利息；這裡不要重複記，以免支出被算兩次。</div>
-      <div className="row mb"><input className="input" style={{ width: 180 }} type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} />
-        <span className="small muted">收入 {fmtMoney(m.income)}・支出 {fmtMoney(m.expenses)}</span></div>
-      {list.length === 0 ? <Empty title={`${month} 沒有收支紀錄`}>每天花 5 分鐘記錄，月底就能看清楚錢去哪了。</Empty> : (
-        <div className="table-wrap"><table>
-          <thead><tr><th>日期</th><th>類型</th><th>分類／備註</th><th className="num">金額</th><th></th></tr></thead>
-          <tbody>{list.map((t) => (
-            <tr key={t.id}>
-              <td>{fmtShortDate(t.date)}</td>
-              <td><span className={`tag ${t.type === 'income' ? 'ok' : t.type === 'nonessential' ? 'warn' : ''}`}>{TX_TYPES[t.type]}</span></td>
-              <td>{t.category || '—'}{t.note && <div className="tiny muted">{t.note}</div>}</td>
-              <td className="num" style={{ color: t.type === 'income' ? 'var(--ok)' : undefined }}>{t.type === 'income' ? '+' : '-'}{fmtMoney(t.amount)}</td>
-              <td style={{ whiteSpace: 'nowrap' }}><button className="icon-btn" onClick={() => setForm(t)}>編輯</button><button className="icon-btn" onClick={() => setConfirm(t)}>刪除</button></td>
-            </tr>))}
-          </tbody>
-        </table></div>
-      )}
-      {form && <RecordForm title={form.id ? '編輯收支' : '新增收支'} fields={txFields(budgetFor(data, monthOf(form.date || toDateStr()))?.items || [])} initial={{ budgetItem: '', ...form }}
+    <>
+      <div className="notice info small">債務還款請到「負債追蹤」記錄，繳卡費請到「信用卡」按「繳卡費」；這裡不要重複記，以免支出被算兩次。</div>
+      <div className="row mb"><button className="btn sm" onClick={() => setForm(blankFrom(TX_FIELDS, { type: 'essential', owner: scope, accountId: '' }))}>＋ 用表單新增</button></div>
+      <LedgerView scope={scope} onEdit={setForm} />
+      {form && <RecordForm title={form.id ? '編輯收支' : '新增收支'} fields={txFields(budgetFor(scoped(data, form.owner || txOwner(form)), monthOf(form.date || toDateStr()))?.items || [], data.accounts)}
+        initial={{ budgetItem: '', accountId: '', ...form, owner: form.owner || txOwner(form) }}
         onSave={(v) => save('transactions', v)} onClose={() => setForm(null)} />}
-      {confirm && <Confirm strong onClose={() => setConfirm(null)} onConfirm={() => remove('transactions', confirm.id)} message={`刪除 ${confirm.date} ${TX_TYPES[confirm.type]} ${fmtMoney(confirm.amount)}？`} />}
-    </Card>
+    </>
   );
 }
 
@@ -284,14 +321,14 @@ function Savings() {
 
   return (
     <>
-      <Card title="存錢目標" action={<button className="btn sm" onClick={() => setGoalForm(blankFrom(GOAL_FIELDS))}>＋ 新增目標</button>}>
+      <Card title="目標追蹤" action={<button className="btn sm" onClick={() => setGoalForm(blankFrom(GOAL_FIELDS))}>＋ 新增目標</button>}>
         {goals.length === 0 && <Empty title="還沒有存錢目標">建議第一個目標是「緊急預備金」，金額約 3 個月必要生活費。</Empty>}
         <div className="grid grid-2">
           {goals.map((g) => {
             const p = goalProgress(g, data.deposits);
             return (
               <div key={g.id} className="card soft" style={{ marginBottom: 0 }}>
-                <div className="row between"><strong>{g.name}</strong>{g.isEmergency && <span className="tag gold">緊急預備金</span>}</div>
+                <div className="row between"><strong>{g.name}</strong>{g.isEmergency && <span className="tag gold">緊急預備金</span>}{g.isSinking && <span className="tag">預存</span>}</div>
                 {g.purpose && <div className="tiny muted">用途：{g.purpose}</div>}
                 <div className="stat-value mt" style={{ fontSize: 20 }}>{fmtMoney(p.saved)} <span className="small muted">／ {fmtMoney(p.target)}</span></div>
                 <Progress value={p.pct} />
@@ -334,21 +371,46 @@ function Savings() {
   );
 }
 
+const NAV = [['home', '快訊'], ['budget', '預算'], ['diag', '診斷'], ['more', '更多']];
+const SCOPED_VIEWS = ['home', 'budget', 'diag', 'ledger', 'calendar'];
+const ALIAS = { tx: 'ledger', overview: 'home' };
+
 export default function Finance() {
-  const [tab, setTab] = useState('overview');
+  const [view, setView] = useState('home');
+  const [scope, setScope] = useState('personal');
   const [budgetMonth, setBudgetMonth] = useState(null);
-  const goBudget = (m) => { setBudgetMonth(m); setTab('budget'); window.scrollTo(0, 0); };
+  const go = (t) => { setView(ALIAS[t] || t); window.scrollTo(0, 0); };
+  const goBudget = (m) => { setBudgetMonth(m); go('budget'); };
+  const isMore = !NAV.some(([k]) => k === view);
+  const title = isMore ? MORE_ITEMS.find(([k]) => k === view)?.[2] : null;
   return (
     <>
       <PageHead eyebrow="MONEY" title="存錢與負債管理" desc="先照顧好生活費與最低應繳，再一步一步存錢、還債。" />
       <AiNotice />
-      <div className="mb"><Chips value={tab} onChange={(t) => { setTab(t); window.scrollTo(0, 0); }} options={[['overview', '總覽'], ['budget', '預算'], ['diag', '診斷'], ['tx', '收支紀錄'], ['debts', '負債'], ['savings', '存錢']]} /></div>
-      {tab === 'overview' && <Overview go={(t) => { setTab(t); window.scrollTo(0, 0); }} />}
-      {tab === 'budget' && <BudgetPlanner key={budgetMonth || 'now'} initialMonth={budgetMonth} />}
-      {tab === 'diag' && <Diagnosis goBudget={goBudget} />}
-      {tab === 'tx' && <Transactions />}
-      {tab === 'debts' && <Debts />}
-      {tab === 'savings' && <Savings />}
+      <div className="seg money-nav mb">
+        {NAV.map(([k, l]) => <button key={k} type="button" className={view === k || (k === 'more' && isMore) ? 'on' : ''} onClick={() => go(k)}>{l}</button>)}
+      </div>
+      {SCOPED_VIEWS.includes(view) && (
+        <div className="scope-bar mb">
+          <span className="tiny muted">帳本</span>
+          <Chips value={scope} onChange={setScope} options={Object.entries(SCOPES)} />
+        </div>
+      )}
+      {isMore && <button type="button" className="btn ghost sm mb" onClick={() => go('more')}>‹ 更多{title ? `／${title}` : ''}</button>}
+      {view === 'home' && <Home go={go} scope={scope} goBudget={goBudget} />}
+      {view === 'budget' && <BudgetPlanner key={`${scope}-${budgetMonth || 'now'}`} initialMonth={budgetMonth} scope={scope} />}
+      {view === 'diag' && <Diagnosis key={scope} goBudget={goBudget} scope={scope} />}
+      {view === 'more' && <MoreGrid go={go} />}
+      {view === 'ledger' && <Ledger scope={scope} />}
+      {view === 'calendar' && <CalendarView scope={scope} />}
+      {view === 'cards' && <CardsView go={go} />}
+      {view === 'accounts' && <AccountsView />}
+      {view === 'savings' && <Savings />}
+      {view === 'wishlist' && <WishlistView />}
+      {view === 'debts' && <Debts />}
+      {view === 'notes' && <NotesView />}
+      {view === 'strategy' && <StrategyView />}
+      {view === 'ai' && <AiView />}
     </>
   );
 }
