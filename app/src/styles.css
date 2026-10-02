@@ -24,8 +24,10 @@
   --radius: 16px;
   --radius-sm: 10px;
   --shadow: 0 1px 2px rgba(94, 70, 50, .05), 0 6px 20px rgba(94, 70, 50, .06);
-  --font: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
-  --serif: "Noto Serif TC", "Songti TC", serif;
+  /* 跟 iPhone App 一樣的系統字體：蘋果裝置用 SF＋蘋方，其他裝置用思源黑體 */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif;
+  --serif: var(--font);
+  --num: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang TC", "Noto Sans TC", Arial, sans-serif;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -35,13 +37,14 @@ body {
   color: var(--ink);
   font-family: var(--font);
   font-size: 16px;
+  letter-spacing: .02em;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
 button, input, select, textarea { font: inherit; color: inherit; }
 h1, h2, h3, h4 { margin: 0; font-weight: 600; line-height: 1.35; }
-h1, h2 { font-family: var(--serif); letter-spacing: .02em; }
+h1, h2 { font-family: var(--font); font-weight: 700; letter-spacing: .02em; }
 p { margin: 0; }
 a { color: var(--tea-dark); }
 
@@ -128,7 +131,7 @@ a { color: var(--tea-dark); }
 /* ---------- 數字卡 ---------- */
 .stat { background: var(--ivory); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
 .stat-label { font-size: 13px; color: var(--muted); }
-.stat-value { font-family: var(--serif); font-size: 24px; font-weight: 700; color: var(--tea-dark); margin-top: 2px; word-break: break-all; }
+.stat-value { font-family: var(--num); font-size: 24px; font-weight: 800; letter-spacing: -.01em; font-variant-numeric: tabular-nums; color: var(--tea-dark); margin-top: 2px; word-break: break-all; }
 .stat-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .stat.gold { background: linear-gradient(135deg, #fffaf0, var(--gold-soft)); border-color: #e6d4ae; }
 @media (max-width: 560px) { .stat-value { font-size: 20px; } .stat { padding: 12px; } }
@@ -310,7 +313,7 @@ tr:last-child td { border-bottom: 0; }
 
 /* ---------- 可用餘額 ---------- */
 .hero-money { background: linear-gradient(160deg, #fffaf3, var(--gold-soft)); border: 1px solid #e9d8b8; border-radius: var(--radius); padding: 22px; margin-bottom: 14px; }
-.hero-amount { font-family: var(--serif); font-size: 44px; font-weight: 700; color: var(--ink); line-height: 1.15; margin: 6px 0; font-variant-numeric: tabular-nums; }
+.hero-amount { font-family: var(--num); font-size: 46px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); line-height: 1.15; margin: 6px 0; font-variant-numeric: tabular-nums; }
 .hero-amount.neg { color: var(--err); }
 @media (max-width: 560px) { .hero-amount { font-size: 36px; } }
 .due-banner, .reminder, .check-row {
@@ -354,7 +357,7 @@ tr:last-child td { border-bottom: 0; }
 .seg button.on { background: var(--tea); color: #fff; font-weight: 600; }
 .amount-box { background: var(--ivory-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; text-align: center; margin-bottom: 14px; }
 .amount-box .cur { font-size: 30px; color: var(--tea); font-weight: 700; }
-.amount-input { border: 0; background: none; font-size: 44px; font-weight: 700; width: 70%; text-align: center; outline: none; font-family: var(--serif); color: var(--ink); }
+.amount-input { border: 0; background: none; font-size: 44px; font-weight: 800; width: 70%; text-align: center; outline: none; font-family: var(--num); color: var(--ink); }
 .scroll-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
 .scroll-chips .chip { flex-shrink: 0; }
 
@@ -391,3 +394,31 @@ tr:last-child td { border-bottom: 0; }
   .icon-tile { font-size: 12px; }
   .cal-day { min-height: 46px; }
 }
+
+/* ---------- 每日待辦 ---------- */
+.todo-add { display: flex; gap: 8px; margin-bottom: 12px; }
+.todo-add .input { flex: 1; min-width: 0; }
+.todo-list { list-style: none; margin: 0; padding: 0; }
+.todo { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.todo:last-child { border-bottom: 0; }
+.todo-check { position: relative; display: inline-flex; cursor: pointer; flex: none; }
+.todo-check input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.todo-check .box { width: 24px; height: 24px; border-radius: 7px; border: 2px solid var(--line-strong); display: grid; place-items: center; color: #fff; font-size: 14px; font-weight: 700; transition: background .15s, border-color .15s; }
+.todo-check input:focus-visible + .box { outline: 2px solid var(--tea); outline-offset: 2px; }
+.todo.done .box { background: var(--tea); border-color: var(--tea); }
+.todo-text { flex: 1; min-width: 0; word-break: break-word; }
+.todo.done .todo-text { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--muted); }
+.todo-edit { flex: 1; display: flex; gap: 6px; min-width: 0; }
+.todo-edit .input { flex: 1; min-width: 0; min-height: 36px; }
+
+/* ---------- 體重趨勢圖 ---------- */
+.chart-wrap { position: relative; width: 100%; touch-action: pan-y; }
+.chart-wrap svg { display: block; overflow: visible; }
+.chart-wrap .grid-line { stroke: var(--line); stroke-width: 1; }
+.chart-wrap .goal-line { stroke: var(--ok); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart-wrap .axis-text { fill: var(--muted); font-size: 11px; font-family: var(--num); }
+.chart-wrap .series-line { fill: none; stroke: var(--tea); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-wrap .series-dot { fill: var(--tea); stroke: var(--ivory); stroke-width: 2; }
+.chart-wrap .end-label { fill: var(--ink); font-size: 12px; font-weight: 700; font-family: var(--num); }
+.chart-wrap .crosshair { stroke: var(--line-strong); stroke-width: 1; }
+.chart-tip { position: absolute; transform: translateX(-50%); background: var(--ivory); border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 10px; box-shadow: var(--shadow); pointer-events: none; white-space: nowrap; font-size: 13px; }

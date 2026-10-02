@@ -4,6 +4,7 @@ import { PageHead, Card, Empty, Chips, Confirm, Field } from '../components/ui.j
 import { AiNotice, AiPanel } from '../components/AiPanel.jsx';
 import { addDays, toDateStr } from '../lib/plan.js';
 import { fmtDate, fmtShortDate } from '../lib/format.js';
+import Weight from '../components/Weight.jsx';
 
 const MOODS = [['', '未填'], ['1', '😞 很低落'], ['2', '😕 有點低'], ['3', '😐 普通'], ['4', '🙂 不錯'], ['5', '😄 很好']];
 const NUM_FIELDS = [
@@ -118,8 +119,10 @@ export default function Life() {
     <>
       <PageHead eyebrow="LIFE" title="生活與自我成長" desc="照顧好自己，事業才走得長。" />
       <AiNotice />
-      <div className="mb"><Chips value={tab} onChange={setTab} options={[['habits', '每日習慣'], ['journal', '日記']]} /></div>
-      {tab === 'habits' ? <Habits /> : <Journal />}
+      <div className="mb"><Chips value={tab} onChange={setTab} options={[['habits', '每日習慣'], ['weight', '體重'], ['journal', '日記']]} /></div>
+      {tab === 'habits' && <Habits />}
+      {tab === 'weight' && <Weight />}
+      {tab === 'journal' && <Journal />}
     </>
   );
 }

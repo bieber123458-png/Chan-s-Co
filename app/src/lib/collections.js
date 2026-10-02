@@ -25,4 +25,6 @@ export const COLLECTIONS = [
   'habits',        // 每日習慣（id = 日期）
   'journals',      // 日記
   'cardDraws',     // 抽卡紀錄
+  'todos',         // 每日待辦（自己寫、可打勾槓掉）
+  'weights',       // 體重紀錄（id = w-日期，一天一筆）
 ];

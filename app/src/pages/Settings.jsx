@@ -64,6 +64,8 @@ const CSV_SETS = {
   tasks: ['任務', ['day', 'category', 'title', 'priority', 'points', 'done', 'minutes', 'result', 'reflection']],
   habits: ['習慣', ['id', 'exercise', 'water', 'sleep', 'reading', 'mood', 'food']],
   journals: ['日記', ['date', 'text']],
+  todos: ['每日待辦', ['date', 'text', 'done']],
+  weights: ['體重紀錄', ['date', 'weight', 'bodyFat', 'waist', 'note']],
 };
 
 const csvCell = (v) => {

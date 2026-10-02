@@ -9,6 +9,8 @@ import { totalPoints, drawsAvailable } from '../lib/stats.js';
 import { fmtDate, fmtShortDate } from '../lib/format.js';
 
 // 建立某一個月的預設計畫（只有那個月還沒有任務時才會用到）
+import Todos from '../components/Todos.jsx';
+
 export function useCreateMonthPlan() {
   const { saveMany, toast } = useStore();
   return async (cycle) => {
@@ -103,6 +105,7 @@ export default function Home({ go }) {
     return (
       <>
         <PageHead eyebrow="WELCOME" title={`歡迎，${settings.displayName || '小陳'}`} desc="每天記錄真實的進度，AI 會根據你的紀錄給具體建議。" />
+        <Todos />
         <Setup />
         <AiNotice />
       </>
@@ -138,6 +141,8 @@ export default function Home({ go }) {
         <Stat label="累積積分" value={points} sub="漏做不扣分" gold />
         <Stat label="可抽卡次數" value={draws} sub={<a href="#/cards" onClick={(e) => { e.preventDefault(); go('cards'); }}>前往抽卡 →</a>} />
       </div>
+
+      <Todos />
 
       {!notStarted && monthTasks.length === 0 && (
         <div className="notice info">
