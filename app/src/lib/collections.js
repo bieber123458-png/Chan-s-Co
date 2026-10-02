@@ -11,6 +11,7 @@ export const COLLECTIONS = [
   'igSnapshots',   // IG 粉絲數與洞察報告總覽紀錄
   'stories',       // 限動組（規劃與發布後數據）
   'drafts',        // 文案與輪播草稿
+  'budgets',       // 每月預算（id = b-YYYY-MM）
   'teamFollowups', // 夥伴跟進紀錄
   'transactions',  // 收支紀錄（不含債務還款）
   'debts',         // 負債清單

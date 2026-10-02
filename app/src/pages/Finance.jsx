@@ -3,9 +3,10 @@ import { useStore } from '../lib/store.jsx';
 import { PageHead, Card, Empty, Chips, Confirm, Stat, Progress, Field } from '../components/ui.jsx';
 import RecordForm, { blankFrom } from '../components/RecordForm.jsx';
 import { AiNotice, AiPanel } from '../components/AiPanel.jsx';
+import { BalanceHero, ReminderCenter, SetupChecklist, MonthSummary, BudgetPlanner } from '../components/MoneyPanels.jsx';
 import { fmtMoney, fmtShortDate } from '../lib/format.js';
 import {
-  TX_TYPES, INCOME_CATEGORIES, STRATEGIES, monthlySummary, debtStatus, splitPayment, payoffMonths, goalProgress, avgEssential, monthOf, round, sum,
+  TX_TYPES, INCOME_CATEGORIES, BUDGET_GROUPS, budgetFor, STRATEGIES, monthlySummary, debtStatus, splitPayment, payoffMonths, goalProgress, avgEssential, monthOf, round, sum,
 } from '../lib/finance.js';
 import { toDateStr } from '../lib/plan.js';
 
@@ -17,6 +18,7 @@ const EXPENSE_SUGGEST = {
 };
 
 const ALL_SUGGEST = [...new Set(Object.values(EXPENSE_SUGGEST).flat())];
+const txFields = (items) => [...TX_FIELDS, ...(items.length ? [{ key: 'budgetItem', label: '算在哪個預算項目（選填）', type: 'select', options: [['', '不指定（依類型自動歸類）'], ...items.map((i) => [i.id, `${BUDGET_GROUPS[i.group]?.name}｜${i.name}`])] }] : [])];
 const TX_FIELDS = [
   { key: 'date', label: '日期', type: 'date', required: true },
   { key: 'type', label: '類型', type: 'select', options: Object.entries(TX_TYPES) },
@@ -54,7 +56,7 @@ const depositFields = (goals) => [
 ];
 
 // ---------------- 總覽 ----------------
-function Overview() {
+function Overview({ go }) {
   const { data, settings, saveSettings } = useStore();
   const [month, setMonth] = useState(toDateStr().slice(0, 7));
   const [customExtra, setCustomExtra] = useState('');
@@ -76,7 +78,6 @@ function Overview() {
   const simMin = focus ? payoffMonths(focus.st.remaining, focus.apr, focus.minPayment) : null;
   const planBase = focus ? Math.max(Number(focus.plannedPayment) || 0, Number(focus.minPayment) || 0) : 0;
   const simPlan = focus ? payoffMonths(focus.st.remaining, focus.apr, planBase + extra) : null;
-  const unpaidMin = activeDebts.filter((d) => !data.debtPayments.some((p) => p.debtId === d.id && monthOf(p.date) === month));
 
   const months = (r) => (r.months === Infinity ? '無法還清（月付不足以支付利息）' : `${r.months} 個月，總利息約 ${fmtMoney(r.interest)}`);
 
@@ -85,21 +86,15 @@ function Overview() {
       <div className="row mb">
         <Field label="查看月份"><input className="input" type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} /></Field>
       </div>
-      {!m.hasData && <div className="notice info">{month} 還沒有任何收支、還款或存錢紀錄，以下數字為 0 不代表實際狀況。</div>}
-      <div className="grid grid-4 mb">
-        <Stat label="本月收入" value={fmtMoney(m.income)} />
-        <Stat label="本月支出" value={fmtMoney(m.expenses)} sub={`必要 ${fmtMoney(m.essential)}・非必要 ${fmtMoney(m.nonessential)}・事業 ${fmtMoney(m.business)}`} />
-        <Stat label="本月存入" value={fmtMoney(m.saved)} />
-        <Stat label="本月還款" value={fmtMoney(m.debtPaid)} sub={`本金 ${fmtMoney(m.debtPrincipal)}・利息 ${fmtMoney(m.debtInterest)}・額外 ${fmtMoney(m.debtExtra)}`} />
-        <Stat label="可用餘額" value={fmtMoney(m.available)} sub="收入－支出－還款－存入" gold />
-        <Stat label="剩餘債務" value={fmtMoney(m.remainingDebt)} sub={`每月最低應繳合計 ${fmtMoney(m.minDue)}`} />
+      <BalanceHero month={month} go={go} />
+      {month === toDateStr().slice(0, 7) && <SetupChecklist go={go} />}
+      {month === toDateStr().slice(0, 7) && <ReminderCenter go={go} />}
+      <MonthSummary month={month} />
+      <div className="grid grid-3 mb">
+        <Stat label="剩餘債務" value={fmtMoney(m.remainingDebt)} sub={`本金（利息另計）・本月還本金 ${fmtMoney(m.debtPrincipal)}`} />
         <Stat label="存錢進度" value={goalsTarget ? `${Math.round((goalsSaved / goalsTarget) * 100)}%` : '—'} sub={goalsTarget ? `${fmtMoney(goalsSaved)}／${fmtMoney(goalsTarget)}` : '尚未設定存錢目標'} />
         <Stat label="事業淨收入" value={fmtMoney(m.businessNet)} sub="收入－事業成本（不是利潤全貌）" />
       </div>
-      {m.available < 0 && <div className="notice err">本月可用餘額為負數：支出、還款與存入加起來超過收入。請先確認必要生活費與最低應繳，其餘存錢或額外還款可以暫緩。</div>}
-      {month === toDateStr().slice(0, 7) && unpaidMin.length > 0 && (
-        <div className="notice warn">本月還沒有記錄還款的債務：{unpaidMin.map((d) => `${d.name}（${d.dueDay} 日，最低 ${fmtMoney(d.minPayment)}）`).join('、')}</div>
-      )}
 
       <Card title="還款與存錢策略">
         <Chips value={strategy} onChange={(k) => saveSettings({ strategy: k })} options={Object.entries(STRATEGIES).map(([k, s]) => [k, s.name])} />
@@ -171,7 +166,7 @@ function Transactions() {
           </tbody>
         </table></div>
       )}
-      {form && <RecordForm title={form.id ? '編輯收支' : '新增收支'} fields={TX_FIELDS} initial={form}
+      {form && <RecordForm title={form.id ? '編輯收支' : '新增收支'} fields={txFields(budgetFor(data, monthOf(form.date || toDateStr()))?.items || [])} initial={{ budgetItem: '', ...form }}
         onSave={(v) => save('transactions', v)} onClose={() => setForm(null)} />}
       {confirm && <Confirm strong onClose={() => setConfirm(null)} onConfirm={() => remove('transactions', confirm.id)} message={`刪除 ${confirm.date} ${TX_TYPES[confirm.type]} ${fmtMoney(confirm.amount)}？`} />}
     </Card>
@@ -345,8 +340,9 @@ export default function Finance() {
     <>
       <PageHead eyebrow="MONEY" title="存錢與負債管理" desc="先照顧好生活費與最低應繳，再一步一步存錢、還債。" />
       <AiNotice />
-      <div className="mb"><Chips value={tab} onChange={setTab} options={[['overview', '總覽'], ['tx', '收支紀錄'], ['debts', '負債'], ['savings', '存錢']]} /></div>
-      {tab === 'overview' && <Overview />}
+      <div className="mb"><Chips value={tab} onChange={(t) => { setTab(t); window.scrollTo(0, 0); }} options={[['overview', '總覽'], ['budget', '預算'], ['tx', '收支紀錄'], ['debts', '負債'], ['savings', '存錢']]} /></div>
+      {tab === 'overview' && <Overview go={(t) => { setTab(t); window.scrollTo(0, 0); }} />}
+      {tab === 'budget' && <BudgetPlanner />}
       {tab === 'tx' && <Transactions />}
       {tab === 'debts' && <Debts />}
       {tab === 'savings' && <Savings />}

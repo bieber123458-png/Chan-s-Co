@@ -170,3 +170,31 @@ test('限動成效：完成率、互動率、觸及粉絲比例', async () => {
   assert.equal(m.reachRate, 10);
   assert.equal(storyMetrics({ firstViews: 500, lastViews: '' }, null).completion, null);
 });
+
+test('可用餘額會先扣掉本月還沒繳的最低應繳', async () => {
+  const { availableBalance, financeReminders, budgetActuals, budgetSuggestion } = await import('../src/lib/finance.js');
+  const data = {
+    transactions: [
+      { date: '2026-10-01', type: 'income', amount: 42000 },
+      { date: '2026-10-02', type: 'essential', amount: 13000, budgetItem: 'rent' },
+      { date: '2026-10-03', type: 'nonessential', amount: 2000 },
+    ],
+    debts: [{ id: 'c1', name: '信用卡 A', startBalance: 30000, minPayment: 3000, dueDay: 10 }, { id: 'c2', name: '信貸', startBalance: 50000, minPayment: 5000, dueDay: 1 }],
+    debtPayments: [{ debtId: 'c2', date: '2026-10-01', total: 5000, principal: 4500, interest: 500 }],
+    deposits: [], savingsGoals: [],
+    budgets: [{ id: 'b-2026-10', items: [{ id: 'rent', name: '房租', group: 'fixed', amount: 13000 }] }],
+  };
+  const a = availableBalance(data, '2026-10');
+  assert.equal(a.unpaidDue, 3000);
+  assert.equal(a.afterDue, 42000 - 15000 - 5000 - 3000);
+  const act = budgetActuals(data, '2026-10');
+  assert.equal(act.fixed, 13000);
+  assert.equal(act.variable, 2000);
+  assert.equal(act.byItem.rent, 13000);
+  const r = financeReminders(data, '2026-10-05');
+  assert.ok(r.some((x) => x.title.includes('信用卡 A') && x.level === 'warn'));
+  assert.ok(!r.some((x) => x.title.includes('信貸')));
+  assert.ok(financeReminders(data, '2026-10-12').some((x) => x.level === 'err'));
+  assert.deepEqual(budgetSuggestion({ income: 42000, fixed: 16800, minDue: 3000, variable: 9600 }), { maxSave: 12600, suggested: 7500, estimated: true });
+  assert.equal(budgetSuggestion({ income: 42000, fixed: 0, minDue: 3000, variable: 0 }).suggested, 7800, '沒有支出資料時用保守的兩成');
+});

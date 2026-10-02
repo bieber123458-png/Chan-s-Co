@@ -3,6 +3,7 @@ import { detectBackend, remote, local, getToken, setToken, getApiBase, setApiBas
 import { StoreProvider, useStore } from './lib/store.jsx';
 import { connectCloud } from './lib/cloud.js';
 import Login from './pages/Login.jsx';
+import QuickAdd from './components/QuickAdd.jsx';
 import Home from './pages/Home.jsx';
 import Plan from './pages/Plan.jsx';
 import Coach from './pages/Coach.jsx';
@@ -28,7 +29,8 @@ export const PAGES = {
   review: { name: '每週／每月覆盤', icon: '↻', C: Reviews },
   settings: { name: '設定與備份', icon: '⚙', C: Settings },
 };
-const BOTTOM = ['home', 'coach', 'content', 'finance'];
+const BOTTOM = ['home', 'content', 'finance'];
+const SHORT = { home: '今日', content: '社群', finance: '財務' };
 
 const pageFromHash = () => {
   const k = window.location.hash.replace('#/', '').split('?')[0];
@@ -43,6 +45,8 @@ function Layout() {
   const { mode, user, logout } = useStore();
   const [page, setPage] = useState(pageFromHash);
   const [drawer, setDrawer] = useState(false);
+  const [quick, setQuick] = useState(false);
+  const { toast } = useStore();
 
   useEffect(() => {
     const on = () => { setPage(pageFromHash()); window.scrollTo(0, 0); };
@@ -81,13 +85,15 @@ function Layout() {
         <main className="main"><C go={go} /></main>
       </div>
       <nav className="bottom-nav" aria-label="主要功能">
-        {BOTTOM.map((k) => (
-          <button key={k} className={page === k ? 'active' : ''} onClick={() => go(k)}>
-            <span className="nav-icon">{PAGES[k].icon}</span>{PAGES[k].name.replace('今日任務', '今日').replace('存錢與負債', '財務').replace('社群內容', '社群')}
-          </button>
+        {BOTTOM.slice(0, 2).map((k) => (
+          <button key={k} className={page === k ? 'active' : ''} onClick={() => go(k)}><span className="nav-icon">{PAGES[k].icon}</span>{SHORT[k]}</button>
         ))}
+        <button className="nav-fab" onClick={() => setQuick(true)} aria-label="快速記帳"><span className="fab-circle">＋</span>快速記帳</button>
+        <button className={page === 'finance' ? 'active' : ''} onClick={() => go('finance')}><span className="nav-icon">{PAGES.finance.icon}</span>{SHORT.finance}</button>
         <button className={BOTTOM.includes(page) ? '' : 'active'} onClick={() => setDrawer(true)}><span className="nav-icon">☰</span>更多</button>
       </nav>
+      <button className="desktop-fab" onClick={() => setQuick(true)} aria-label="快速記帳">＋ 快速記帳</button>
+      {quick && <QuickAdd onClose={(saved) => { setQuick(false); if (saved) toast('已記一筆', 'success'); }} />}
       {drawer && <>
         <div className="drawer-backdrop" onClick={() => setDrawer(false)} />
         <div className="drawer">

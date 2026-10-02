@@ -156,3 +156,108 @@ export const STRATEGIES = {
     fit: '已能穩定繳最低應繳、想兼顧存錢目標時最適合。',
   },
 };
+
+// ---------------- 每月預算 ----------------
+// 預算項目分三組：固定（本月一定要付的）、變動（生活、娛樂）、事業成本
+export const BUDGET_GROUPS = {
+  fixed: { name: '固定', hint: '本月一定要支付的' },
+  variable: { name: '變動', hint: '生活、飲食、娛樂' },
+  business: { name: '事業', hint: '進貨、廣告、器材' },
+};
+
+export const budgetId = (month) => `b-${month}`;
+export const prevMonth = (month) => {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+export const budgetFor = (data, month) => (data.budgets || []).find((b) => b.id === budgetId(month)) || null;
+
+// 這筆支出算在哪一組：有指定預算項目就用項目的組別，否則依收支類型
+export function txGroup(tx, budget) {
+  const item = budget?.items?.find((i) => i.id === tx.budgetItem);
+  if (item) return item.group;
+  return { essential: 'fixed', nonessential: 'variable', business: 'business' }[tx.type] || null;
+}
+
+// 預算 vs 實際：每組與每個項目的實際支出
+export function budgetActuals(data, month, budget = budgetFor(data, month)) {
+  const out = { fixed: 0, variable: 0, business: 0, byItem: {} };
+  for (const t of data.transactions || []) {
+    if (monthOf(t.date) !== month || t.type === 'income') continue;
+    const g = txGroup(t, budget);
+    if (g) out[g] = round(out[g] + Number(t.amount || 0));
+    if (t.budgetItem) out.byItem[t.budgetItem] = round((out.byItem[t.budgetItem] || 0) + Number(t.amount || 0));
+  }
+  return out;
+}
+
+export function budgetTotals(budget) {
+  const items = budget?.items || [];
+  const by = (g) => round(sum(items.filter((i) => i.group === g), (i) => i.amount));
+  return { fixed: by('fixed'), variable: by('variable'), business: by('business'), all: round(sum(items, (i) => i.amount)) };
+}
+
+// 本月還沒有還款紀錄的負債最低應繳（卡費、貸款）
+export function unpaidDues(data, month) {
+  const pays = data.debtPayments || [];
+  return (data.debts || [])
+    .filter((d) => !debtStatus(d, pays).paidOff)
+    .filter((d) => !pays.some((p) => p.debtId === d.id && monthOf(p.date) === month))
+    .map((d) => ({ debt: d, amount: Number(d.minPayment) || 0 }));
+}
+
+// 本月可用餘額：收入 − 支出 − 已還款 − 已存入 − 還沒繳的最低應繳
+export function availableBalance(data, month) {
+  const m = monthlySummary(data, month);
+  const due = round(sum(unpaidDues(data, month), (x) => x.amount));
+  const spent = round(m.expenses + m.debtPaid);
+  return {
+    ...m,
+    unpaidDue: due,
+    afterDue: round(m.available - due),
+    spendRatio: m.income > 0 ? Math.round(((spent + due) / m.income) * 100) : null,
+  };
+}
+
+// 預算建議：收入扣掉固定支出、最低應繳、變動支出估計後，最多可存多少；建議先存其中六成，保留彈性
+// 沒有任何支出資料可以估時，不假設支出是 0，改用收入的兩成當保守建議
+export function budgetSuggestion({ income, fixed, minDue, variable }) {
+  const inc = Number(income) || 0;
+  const known = (Number(fixed) || 0) + (Number(variable) || 0);
+  if (!known) {
+    const s = Math.floor((Math.max(0, inc - (Number(minDue) || 0)) * 0.2) / 100) * 100;
+    return { maxSave: null, suggested: s, estimated: false };
+  }
+  const room = Math.max(0, inc - known - (Number(minDue) || 0));
+  return { maxSave: Math.round(room), suggested: Math.floor((room * 0.6) / 100) * 100, estimated: true };
+}
+
+// 提醒中心
+export function financeReminders(data, today) {
+  const month = monthOf(today);
+  const day = Number(today.slice(8, 10));
+  const list = [];
+  for (const { debt, amount } of unpaidDues(data, month)) {
+    const due = Number(debt.dueDay) || 0;
+    if (!due) continue;
+    if (day > due) list.push({ level: 'err', title: `${debt.name} 本月還沒記錄還款`, detail: `繳款日 ${due} 日已過，最低應繳 ${Math.round(amount).toLocaleString('zh-TW')} 元。如果已經繳了，記得到「負債」記錄。`, tab: 'debts' });
+    else if (due - day <= 7) list.push({ level: 'warn', title: `${debt.name} ${due - day === 0 ? '今天' : `${due - day} 天後`}到期`, detail: `最低應繳 ${Math.round(amount).toLocaleString('zh-TW')} 元，繳款日 ${due} 日。`, tab: 'debts' });
+  }
+  if (!budgetFor(data, month)?.done) list.push({ level: 'info', title: '這個月的預算還沒編好', detail: '先決定收入怎麼分配，比較不會月底才發現超支。', tab: 'budget' });
+  const deps = (data.deposits || []).filter((d) => monthOf(d.date) === month && d.kind !== 'withdraw');
+  for (const g of data.savingsGoals || []) {
+    if (Number(g.monthlyAmount) > 0 && day >= 20 && !deps.some((d) => d.goalId === g.id)) {
+      list.push({ level: 'info', title: `「${g.name}」這個月還沒存`, detail: `計畫每月存 ${Number(g.monthlyAmount).toLocaleString('zh-TW')} 元。`, tab: 'savings' });
+    }
+  }
+  const recent = (data.transactions || []).some((t) => t.date >= addDaysStr(today, -3));
+  if ((data.transactions || []).length && !recent) list.push({ level: 'info', title: '已經 3 天沒有記帳', detail: '按下方的「＋」，30 秒記一筆就好。', tab: 'tx' });
+  return list;
+}
+
+function addDaysStr(s, n) {
+  const [y, m, d] = s.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + n);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
