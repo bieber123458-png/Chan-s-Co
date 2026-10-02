@@ -65,6 +65,9 @@ export function toSampleInput(spec) {
   return turns.length === 1 ? turns[0].content : turns;
 }
 
+// 是不是在 claude.ai 裡打開的
+export const inClaude = () => typeof window !== 'undefined' && typeof window.claude?.use === 'function';
+
 export async function connectCloud() {
   const c = typeof window !== 'undefined' ? window.claude : null;
   if (!c?.use) return null;
@@ -91,12 +94,31 @@ export async function connectCloud() {
   // 清掉 undefined，確保是純 JSON
   const clean = (rec) => JSON.parse(JSON.stringify(rec));
 
+  // 一次最多讀 1000 筆；超過時依 id 分頁讀完，避免舊紀錄被漏掉
+  const PAGE = 1000;
+  const readCollection = async (name) => {
+    const first = await withRetry(() => col(name).limit(PAGE).get());
+    const rows = first.docs.filter((d) => d.exists).map((d) => ({ ...d.data() }));
+    if (first.docs.length < PAGE) return rows;
+    const all = new Map(rows.map((r) => [String(r.id), r]));
+    let last = null;
+    for (let i = 0; i < 100; i++) {
+      let q = col(name).orderBy('id');
+      if (last !== null) q = q.where('id', '>', last);
+      const snap = await withRetry(() => q.limit(PAGE).get());
+      const page = snap.docs.filter((d) => d.exists).map((d) => ({ ...d.data() }));
+      page.forEach((r) => all.set(String(r.id), r));
+      if (snap.docs.length < PAGE || !page.length) break;
+      last = page[page.length - 1].id;
+    }
+    return [...all.values()];
+  };
+
   const api = {
     async loadAll() {
       const data = emptyData();
       await pool(COLLECTIONS, async (name) => {
-        const snap = await withRetry(() => col(name).limit(1000).get());
-        data[name] = snap.docs.filter((d) => d.exists).map((d) => ({ ...d.data() }))
+        data[name] = (await readCollection(name))
           .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
       });
       return data;

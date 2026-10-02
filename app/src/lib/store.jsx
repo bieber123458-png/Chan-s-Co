@@ -8,9 +8,18 @@ import { build, toPlainPrompt } from './prompts.js';
 const Ctx = createContext(null);
 export const useStore = () => useContext(Ctx);
 
-export function StoreProvider({ mode, status, initialData, user, onLogout, toast, cloud, children }) {
+export function StoreProvider({ mode, status, initialData, user, onLogout, toast, cloud, noCloud = false, leftover = null, children }) {
   const [data, setData] = useState(() => ({ ...emptyData(), ...initialData }));
-  const backend = mode === 'remote' ? remote : mode === 'cloud' ? cloud : local;
+  const [pending, setPending] = useState(0);
+  const rawBackend = mode === 'remote' ? remote : mode === 'cloud' ? cloud : local;
+  // 計算正在儲存的筆數，讓畫面顯示「儲存中…／已自動存到雲端」
+  const backend = useMemo(() => {
+    const track = (fn) => async (...args) => {
+      setPending((n) => n + 1);
+      try { return await fn(...args); } finally { setPending((n) => n - 1); }
+    };
+    return { ...rawBackend, put: track(rawBackend.put), batch: track(rawBackend.batch), del: track(rawBackend.del), delMany: track(rawBackend.delMany) };
+  }, [rawBackend]);
   const dataRef = useRef(data);
   dataRef.current = data;
 
@@ -144,6 +153,7 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
   }, [data.tasks, settings.startDate, saveMany]);
 
   const value = {
+    noCloud, leftover, saving: pending > 0,
     mode, status, user, data, settings, save, saveMany, remove, removeMany, saveSettings, importAll, ai, toast, downloadFile, promptFor, saveManualAi, logout: onLogout,
     aiReady: mode === 'cloud' || (mode === 'remote' && !!status?.aiConfigured),
   };

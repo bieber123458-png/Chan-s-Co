@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { detectBackend, remote, local, getToken, setToken, getApiBase, setApiBase } from './lib/api.js';
 import { StoreProvider, useStore } from './lib/store.jsx';
-import { connectCloud } from './lib/cloud.js';
+import { connectCloud, inClaude } from './lib/cloud.js';
 import Login from './pages/Login.jsx';
 import QuickAdd from './components/QuickAdd.jsx';
 import Home from './pages/Home.jsx';
@@ -15,6 +15,10 @@ import Life from './pages/Life.jsx';
 import Cards from './pages/Cards.jsx';
 import Reviews from './pages/Reviews.jsx';
 import Settings from './pages/Settings.jsx';
+import { CLAUDE_VERSION_URL } from './components/AiPanel.jsx';
+import { COLLECTIONS } from './lib/collections.js';
+
+const MIGRATED_KEY = 'xc30-local-migrated';
 
 export const PAGES = {
   home: { name: '今日任務', icon: '☀', C: Home },
@@ -41,8 +45,61 @@ function Toasts({ items }) {
   return <div className="toasts" aria-live="polite">{items.map((t) => <div key={t.id} className={`toast ${t.type}`}>{t.text}</div>)}</div>;
 }
 
+// 右上角的儲存狀態：讓你隨時知道資料存在哪裡
+function SaveBadge({ go }) {
+  const { mode, noCloud, saving } = useStore();
+  const [label, cls] = mode === 'cloud' ? [saving ? '☁ 儲存中…' : '☁ 已自動存到雲端', 'ok']
+    : mode === 'remote' ? [saving ? '☁ 儲存中…' : '☁ 已存到主機', 'ok']
+      : noCloud ? ['⚠ 雲端未連上', 'err'] : ['⚠ 只存在這個瀏覽器', 'warn'];
+  return <button type="button" className={`save-badge ${cls}`} onClick={() => go('settings')}>{label}</button>;
+}
+
+function NoCloudBanner() {
+  return (
+    <div className="notice err">
+      <strong>⚠ 這次沒有連上 Claude 雲端儲存</strong>
+      <div className="small mt">現在的紀錄只暫存在這個視窗，關掉後可能會不見。請用下面這個<strong>固定連結</strong>打開（同一個連結每次都會看到原本的紀錄），出現詢問時按「允許」。</div>
+      <div className="row mt">
+        <a className="btn sm" href={CLAUDE_VERSION_URL} target="_blank" rel="noreferrer">用固定連結打開</a>
+        <button className="btn ghost sm" onClick={() => window.location.reload()}>重新連線</button>
+      </div>
+    </div>
+  );
+}
+
+// 之前存在這個瀏覽器的紀錄 → 搬到雲端（只補雲端沒有的，不會覆蓋）
+function MigrateBanner() {
+  const { mode, leftover, data, saveMany, toast } = useStore();
+  const [hidden, setHidden] = useState(() => { try { return localStorage.getItem(MIGRATED_KEY) === '1'; } catch { return false; } });
+  const [busy, setBusy] = useState(false);
+  if (mode !== 'cloud' || !leftover || hidden) return null;
+  const missing = COLLECTIONS.map((c) => [c, (leftover[c] || []).filter((r) => r?.id !== undefined && !data[c].some((x) => String(x.id) === String(r.id)))]).filter(([, l]) => l.length);
+  const n = missing.reduce((s, [, l]) => s + l.length, 0);
+  if (!n) return null;
+  const done = () => { try { localStorage.setItem(MIGRATED_KEY, '1'); } catch { /* 無法記住也沒關係 */ } setHidden(true); };
+  const move = async () => {
+    setBusy(true);
+    for (const [c, list] of missing) {
+      if (!(await saveMany(c, list))) { setBusy(false); return; }
+    }
+    setBusy(false);
+    toast(`已把 ${n} 筆紀錄搬到雲端`, 'success');
+    done();
+  };
+  return (
+    <div className="notice info">
+      <strong>這個瀏覽器裡還有 {n} 筆之前的紀錄，還沒存到雲端</strong>
+      <div className="small mt">應該是之前雲端沒連上時記的。搬過去後，換手機、電腦打開都看得到；雲端已經有的資料不會被覆蓋。</div>
+      <div className="row mt">
+        <button className="btn sm" disabled={busy} onClick={move}>{busy ? <span className="spinner" /> : null}搬到雲端</button>
+        <button className="btn ghost sm" disabled={busy} onClick={done}>不用了</button>
+      </div>
+    </div>
+  );
+}
+
 function Layout() {
-  const { mode, user, logout } = useStore();
+  const { mode, user, logout, noCloud } = useStore();
   const [page, setPage] = useState(pageFromHash);
   const [drawer, setDrawer] = useState(false);
   const [quick, setQuick] = useState(false);
@@ -74,15 +131,19 @@ function Layout() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand"><div className="brand-name">小陳的每月經營系統</div><div className="brand-sub">GROW · BUILD · SAVE</div></div>
+        <div className="brand"><div className="brand-name">小陳的每月經營系統</div><div className="brand-sub">GROW · BUILD · SAVE</div><div className="mt"><SaveBadge go={go} /></div></div>
         {navList}
       </aside>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="mobile-top">
           <div className="brand-name" style={{ fontSize: 16 }}>小陳的每月經營系統</div>
-          <button className="icon-btn" onClick={() => setDrawer(true)} aria-label="開啟選單">☰</button>
+          <SaveBadge go={go} />
         </div>
-        <main className="main"><C go={go} /></main>
+        <main className="main">
+          {noCloud && <NoCloudBanner />}
+          <MigrateBanner />
+          <C go={go} />
+        </main>
       </div>
       <nav className="bottom-nav" aria-label="主要功能">
         {BOTTOM.slice(0, 2).map((k) => (
@@ -124,18 +185,22 @@ export default function App() {
     }
     if (!status) {
       // 在 claude.ai 打開時，改用 Claude 雲端（資料跟著 Claude 帳號、AI 用自己的 Claude 帳號）
-      const cloud = await connectCloud().catch(() => null);
+      let cloud = await connectCloud().catch(() => null);
+      // 在 Claude 裡打開但雲端還沒準備好：等一下再試一次，不要直接改用暫存
+      if (!cloud && inClaude()) { await new Promise((r) => setTimeout(r, 1500)); cloud = await connectCloud().catch(() => null); }
       if (cloud) {
         try {
           const data = await cloud.loadAll();
-          setState({ phase: 'ready', mode: 'cloud', status: null, data, user: null, cloud });
+          // 之前雲端沒連上時存在這個瀏覽器的紀錄，之後可以搬到雲端
+          const leftover = await local.loadAll().catch(() => null);
+          setState({ phase: 'ready', mode: 'cloud', status: null, data, user: null, cloud, leftover });
         } catch (e) {
           setState({ phase: 'error', message: e.message });
         }
         return;
       }
       const data = await local.loadAll();
-      setState({ phase: 'ready', mode: 'local', status: null, data, user: null });
+      setState({ phase: 'ready', mode: 'local', status: null, data, user: null, noCloud: inClaude() });
       return;
     }
     if (!getToken()) { setState({ phase: 'login', status }); return; }
@@ -164,7 +229,7 @@ export default function App() {
   );
   else if (state.phase === 'login') body = <Login status={state.status} onDone={(token) => { setToken(token); boot(); }} />;
   else body = (
-    <StoreProvider key={state.user?.id || state.mode} mode={state.mode} status={state.status} cloud={state.cloud} initialData={state.data} user={state.user} onLogout={logout} toast={toast}>
+    <StoreProvider key={state.user?.id || state.mode} noCloud={!!state.noCloud} leftover={state.leftover || null} mode={state.mode} status={state.status} cloud={state.cloud} initialData={state.data} user={state.user} onLogout={logout} toast={toast}>
       <Layout />
     </StoreProvider>
   );
