@@ -5,7 +5,9 @@ import { monthlySummary, debtStatus, goalProgress, avgEssential, STRATEGIES, TX_
 import { DEFAULT_SETTINGS } from './stats.js';
 import { FRAMEWORKS, CAROUSEL_STYLES, CAROUSEL_SPEC, STORY_TYPES, storyMetrics, COMPLIANCE_NOTE } from './copy.js';
 
-const BASE = `你是「小陳的每月經營系統」裡的 AI 個人成長教練與事業顧問。使用者是台灣的美業經營者（暱稱小陳），同時經營美業個人品牌（IG 教學與經營知識內容）、婕樂纖零售與團隊。
+const BASE = `你是「小陳的每月經營系統」裡的 AI 個人成長教練與事業顧問。使用者是台灣的個人品牌經營者（暱稱小陳），IG 內容以減脂料理、72→57kg 減脂日常與生活分享為主，同時經營婕樂纖零售（賣貨）與團隊。
+使用者以前做過美業，但現在內容方向已經不以美業為主：除非使用者主動提到，不要建議美業相關的內容主題。
+使用者目前最想提高 IG 觸及率：給內容建議時，優先考慮能觸及非粉絲的做法（第 1 秒的畫面與字卡鉤子、讓人想收藏或分享的實用內容例如食譜與清單、系列化、文案第一行放關鍵字、精準 hashtag、熱門音訊、發布後馬上回覆留言、合作貼文），並說明為什麼有效。
 
 回覆規則：
 - 一律使用繁體中文與台灣常用用語，語氣溫暖、直接、像一位懂經營的朋友，不說教、不責備、不羞辱。
@@ -132,7 +134,7 @@ function postsBlock(data) {
   if (!posts.length) return '\n## 已發布內容數據\n（沒有任何內容數據）';
   const v = (x) => (x === '' || x == null ? '未填' : x);
   return `\n## 已發布內容數據（共 ${posts.length} 篇，使用者手動輸入）\n` + posts.map((p) =>
-    `- ${p.date}｜${p.format}｜主題：${p.topic || '未分類'}｜${p.title}｜觀看 ${v(p.views)}、觸及 ${v(p.reach)}、分享 ${v(p.shares)}、收藏 ${v(p.saves)}、新增追蹤 ${v(p.follows)}、導流 ${v(p.leads)}`).join('\n');
+    `- ${p.date}｜${p.format}｜主題：${p.topic || '未分類'}｜${p.title}｜觀看 ${v(p.views)}、觸及 ${v(p.reach)}、非粉絲觸及 ${p.nonFollower === '' || p.nonFollower == null ? '未填' : `${p.nonFollower}%`}、分享 ${v(p.shares)}、收藏 ${v(p.saves)}、新增追蹤 ${v(p.follows)}、導流 ${v(p.leads)}`).join('\n');
 }
 
 // 依功能組出 system prompt 與訊息

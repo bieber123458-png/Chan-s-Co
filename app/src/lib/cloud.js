@@ -114,7 +114,50 @@ export async function connectCloud() {
     return [...all.values()];
   };
 
+  // 每日快照：存在 data/users/<uid>/backup 底下（和一般資料分開，不會在開啟時全部載入）
+  // 一份快照拆成多個小段（每段 6 萬字），避免超過單筆 256KB 的上限
+  const snapRoot = db.doc(`data/users/${uid}/backup`);
+  const days = snapRoot.collection('days');
+  const parts = snapRoot.collection('parts');
+  const CHUNK = 60000;
+  const snapshots = {
+    async list() {
+      const snap = await withRetry(() => days.limit(200).get());
+      return snap.docs.filter((d) => d.exists).map((d) => ({ ...d.data() }))
+        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    },
+    async save(id, data, label) {
+      if (!SAFE_ID.test(id)) throw new ApiError('備份編號格式不正確', 0);
+      const text = JSON.stringify(data);
+      const n = Math.max(1, Math.ceil(text.length / CHUNK));
+      const prev = await withRetry(() => days.doc(id).get());
+      const oldParts = prev.exists ? Number(prev.data().parts) || 0 : 0;
+      await pool(Array.from({ length: n }, (_, i) => i), (i) => withRetry(() => parts.doc(`${id}_${i}`).set({ id, i, text: text.slice(i * CHUNK, (i + 1) * CHUNK) })));
+      // 每一段都存好之後才寫目錄，目錄存在就代表這份備份是完整的
+      await withRetry(() => days.doc(id).set({ id, date: id.slice(0, 10), label: label || '', parts: n, size: text.length, count: COLLECTIONS.reduce((s, c) => s + (data[c] || []).length, 0), createdAt: new Date().toISOString() }));
+      for (let i = n; i < oldParts; i++) await withRetry(() => parts.doc(`${id}_${i}`).delete());
+    },
+    async load(id) {
+      const meta = await withRetry(() => days.doc(id).get());
+      if (!meta.exists) throw new ApiError('找不到這份備份', 0);
+      const n = Number(meta.data().parts) || 0;
+      const chunks = await pool(Array.from({ length: n }, (_, i) => i), async (i) => {
+        const d = await withRetry(() => parts.doc(`${id}_${i}`).get());
+        if (!d.exists) throw new ApiError('這份備份不完整，無法讀取', 0);
+        return d.data().text;
+      });
+      return JSON.parse(chunks.join(''));
+    },
+    async remove(id) {
+      const meta = await withRetry(() => days.doc(id).get());
+      const n = meta.exists ? Number(meta.data().parts) || 0 : 0;
+      await withRetry(() => days.doc(id).delete());
+      for (let i = 0; i < n; i++) await withRetry(() => parts.doc(`${id}_${i}`).delete());
+    },
+  };
+
   const api = {
+    snapshots,
     async loadAll() {
       const data = emptyData();
       await pool(COLLECTIONS, async (name) => {

@@ -11,7 +11,7 @@ export const TX_TYPES = {
   business: '事業成本',
 };
 
-export const INCOME_CATEGORIES = ['零售收入', '團隊獎金', '美業服務/課程', '其他收入'];
+export const INCOME_CATEGORIES = ['零售收入', '團隊獎金', '服務／課程收入', '其他收入'];
 
 export const round = (n) => Math.round((Number(n) || 0) * 100) / 100;
 export const sum = (arr, f = (x) => x) => arr.reduce((s, x) => s + (Number(f(x)) || 0), 0);

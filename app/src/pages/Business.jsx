@@ -92,7 +92,7 @@ function Brand({ month }) {
   const { data, settings } = useStore();
   const posts = data.posts.filter((p) => monthOf(p.date) === month);
   return (
-    <Card title="A. 美業個人品牌">
+    <Card title="A. 個人品牌（IG）">
       <div className="grid grid-3">
         <Stat label="本月內容產出" value={`${posts.length}／${settings.monthlyContentGoal}`} sub={<Progress value={(posts.length / (settings.monthlyContentGoal || 1)) * 100} />} />
         <Stat label="觸及" value={fmtNum(sum(posts, (p) => p.reach))} sub={`觀看 ${fmtNum(sum(posts, (p) => p.views))}`} />

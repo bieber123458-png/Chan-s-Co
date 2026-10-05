@@ -1,8 +1,9 @@
 // 全域資料狀態：載入、儲存、刪除都經過這裡，並統一處理錯誤提示
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { remote, local, newId, emptyData } from './api.js';
-import { DEFAULT_SETTINGS } from './stats.js';
-import { dateOfDay } from './plan.js';
+import { DEFAULT_SETTINGS, LEGACY_POSITIONINGS } from './stats.js';
+import { KEEP, autoBackup, localSnapshots, prune } from './backup.js';
+import { dateOfDay, toDateStr } from './plan.js';
 import { build, toPlainPrompt } from './prompts.js';
 
 const Ctx = createContext(null);
@@ -24,7 +25,11 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
   dataRef.current = data;
 
   const settings = useMemo(
-    () => ({ ...DEFAULT_SETTINGS, ...(data.settings.find((s) => s.id === 'main') || {}) }),
+    () => {
+      const s = { ...DEFAULT_SETTINGS, ...(data.settings.find((x) => x.id === 'main') || {}) };
+      if (LEGACY_POSITIONINGS.includes(s.igPositioning)) s.igPositioning = DEFAULT_SETTINGS.igPositioning;
+      return s;
+    },
     [data.settings],
   );
 
@@ -96,10 +101,32 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
 
   const saveSettings = useCallback((patch, opts) => save('settings', { ...settings, ...patch, id: 'main' }, opts), [save, settings]);
 
+  // 每日快照：雲端存在 Claude 私人區，本機存在這個瀏覽器；連主機（remote）時由主機資料庫負責
+  const snapshots = useMemo(() => (mode === 'cloud' ? cloud?.snapshots || null : mode === 'local' ? localSnapshots() : null), [mode, cloud]);
+  const keep = KEEP[mode] || 3;
+  const [backupTick, setBackupTick] = useState(0);
+  const openedWith = useRef(initialData);
+  useEffect(() => {
+    // 每天第一次打開時，存一份「打開當下」的資料
+    if (!snapshots) return;
+    autoBackup(snapshots, openedWith.current, keep).then((saved) => { if (saved) setBackupTick((n) => n + 1); }).catch(() => {});
+  }, [snapshots, keep]);
+
+  const backupNow = useCallback(async (label = '手動備份') => {
+    if (!snapshots) throw new Error('目前的模式不支援自動備份，請下載 JSON 備份');
+    const d = new Date();
+    const id = `${toDateStr(d)}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
+    await snapshots.save(id, dataRef.current, label);
+    await prune(snapshots, keep);
+    setBackupTick((n) => n + 1);
+  }, [snapshots, keep]);
+
   const importAll = useCallback(async (payload) => {
+    // 還原前先把目前的資料存一份，萬一選錯備份還能救回來
+    if (snapshots) await backupNow('還原前自動備份');
     const next = await backend.importAll(payload);
     setData({ ...emptyData(), ...next });
-  }, [backend]);
+  }, [backend, snapshots, backupNow]);
 
   // 呼叫 AI。成功後把紀錄加入 AI 歷史並回傳；失敗時丟出錯誤讓元件顯示
   const ai = useCallback(async (kind, body) => {
@@ -153,7 +180,7 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
   }, [data.tasks, settings.startDate, saveMany]);
 
   const value = {
-    noCloud, leftover, saving: pending > 0,
+    noCloud, leftover, saving: pending > 0, snapshots, backupNow, backupTick, keepBackups: keep,
     mode, status, user, data, settings, save, saveMany, remove, removeMany, saveSettings, importAll, ai, toast, downloadFile, promptFor, saveManualAi, logout: onLogout,
     aiReady: mode === 'cloud' || (mode === 'remote' && !!status?.aiConfigured),
   };

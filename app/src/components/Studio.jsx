@@ -21,7 +21,7 @@ async function copyText(text, toast) {
 const sectionsFor = (fw) => FRAMEWORKS[fw].sections.map(([role, hint, example]) => ({ role, hint, example, text: '' }));
 
 export function newCopyDraft() {
-  return { id: newId(), kind: 'copy', status: '草稿', format: 'Reels 腳本', framework: 'pain', topic: '', points: '', sections: sectionsFor('pain') };
+  return { id: newId(), kind: 'copy', status: '草稿', format: 'Reels 腳本', framework: 'recipe', topic: '', points: '', sections: sectionsFor('recipe') };
 }
 export function newCarouselDraft() {
   return { id: newId(), kind: 'carousel', status: '草稿', style: 'teach', topic: '', points: '', pages: buildCarousel(7, 'teach') };
@@ -117,7 +117,7 @@ export function CarouselStudio({ draft, setDraft }) {
             {[5, 6, 7, 8, 9, 10].map((n) => <option key={n} value={n}>{n} 頁</option>)}
           </select>
         </Field>
-        <Field label="主題"><input id="carousel-topic" className="input" value={d.topic} onChange={(e) => set({ topic: e.target.value })} placeholder="例如：美業人必備 6 個工具" /></Field>
+        <Field label="主題"><input id="carousel-topic" className="input" value={d.topic} onChange={(e) => set({ topic: e.target.value })} placeholder="例如：5 道 15 分鐘減脂晚餐" /></Field>
         <Field label="想講的重點（選填）" full><input id="carousel-points" className="input" value={d.points} onChange={(e) => set({ points: e.target.value })} /></Field>
       </div>
       <details className="mb small"><summary style={{ cursor: 'pointer', color: 'var(--tea-dark)' }}>呈現規範（尺寸、字體、顏色）</summary><ul>{CAROUSEL_SPEC.map((x) => <li key={x}>{x}</li>)}</ul></details>

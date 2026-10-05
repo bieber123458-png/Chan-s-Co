@@ -48,9 +48,11 @@ export function FieldInput({ f, value, onChange, error }) {
   const cls = `input ${error ? 'invalid' : ''}`;
   if (f.type === 'textarea') return <textarea className={cls} rows={f.rows || 3} value={value ?? ''} placeholder={f.placeholder} onChange={(e) => onChange(e.target.value)} />;
   if (f.type === 'select') {
+    // 舊資料的值如果已經不在選項裡，仍然顯示出來，避免編輯時被悄悄改掉
+    const opts = value !== '' && value != null && !f.options.some(([k]) => String(k) === String(value)) ? [...f.options, [value, String(value)]] : f.options;
     return (
       <select className={cls} value={value ?? ''} onChange={(e) => onChange(e.target.value)}>
-        {f.options.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        {opts.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
       </select>
     );
   }

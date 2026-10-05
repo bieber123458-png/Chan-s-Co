@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../lib/store.jsx';
 import { PageHead, Card, Field, Confirm } from '../components/ui.jsx';
 import { COLLECTIONS } from '../lib/collections.js';
@@ -42,6 +42,57 @@ function ConnectBackend() {
           <button className="btn" disabled={busy} onClick={connect}>{busy ? <span className="spinner" /> : null}測試並連接</button>
         </>
       )}
+    </Card>
+  );
+}
+
+// 自動備份清單：每天第一次打開時自動存一份，可以下載或還原
+function AutoBackups() {
+  const { snapshots, backupNow, backupTick, keepBackups, importAll, downloadFile, toast, mode } = useStore();
+  const [list, setList] = useState(null);
+  const [busy, setBusy] = useState('');
+  const [confirm, setConfirm] = useState(null);
+  useEffect(() => {
+    if (!snapshots) return undefined;
+    let alive = true;
+    snapshots.list().then((l) => { if (alive) setList(l); }).catch(() => { if (alive) setList([]); });
+    return () => { alive = false; };
+  }, [snapshots, backupTick]);
+  if (!snapshots) return null;
+
+  const run = async (key, fn) => {
+    setBusy(key);
+    try { await fn(); } catch (e) { toast(e.message || '操作失敗', 'error'); }
+    setBusy('');
+  };
+  const download = (s) => run(`dl-${s.id}`, async () => {
+    const d = await snapshots.load(s.id);
+    downloadFile(`xiaochen-backup-${s.id}.json`, JSON.stringify({ app: 'xiaochen-30-day-system', version: 1, exportedAt: s.createdAt, data: d }, null, 2), 'application/json');
+  });
+  const restore = (s) => run(`rs-${s.id}`, async () => {
+    const d = await snapshots.load(s.id);
+    await importAll(d);
+    toast(`已還原 ${s.id} 的備份（還原前的資料也另外存了一份）`, 'success');
+  });
+
+  return (
+    <Card title="自動備份" action={<button className="btn ghost sm" disabled={!!busy} onClick={() => run('now', async () => { await backupNow(); toast('已備份', 'success'); })}>{busy === 'now' ? <span className="spinner" /> : null}立即備份</button>}>
+      <p className="small muted mb">每天第一次打開系統時，會自動把所有資料存一份{mode === 'cloud' ? '到你的 Claude 私人雲端' : '在這個瀏覽器'}，保留最近 {keepBackups} 份。不小心刪錯或改錯，都可以從這裡下載或還原。{mode !== 'cloud' && '瀏覽器的空間有限，重要的資料請另外下載 JSON 備份。'}</p>
+      {list === null ? <p className="small muted"><span className="spinner" /> 讀取中…</p> : list.length === 0 ? <p className="small muted">還沒有備份。明天第一次打開時會自動備份，也可以按「立即備份」。</p> : (
+        list.map((s) => (
+          <div key={s.id} className="list-item row between">
+            <div><strong>{s.date}</strong> <span className="tiny muted">{s.id.length > 10 ? s.id.slice(11).replace(/^(\d\d)(\d\d)(\d\d)$/, '$1:$2') : ''}</span>
+              <div className="tiny muted">{s.label || '自動備份'}・{s.count} 筆資料</div></div>
+            <div className="row" style={{ gap: 4 }}>
+              <button className="btn ghost sm" disabled={!!busy} onClick={() => download(s)}>{busy === `dl-${s.id}` ? <span className="spinner" /> : null}下載</button>
+              <button className="btn ghost sm" disabled={!!busy} onClick={() => setConfirm(s)}>{busy === `rs-${s.id}` ? <span className="spinner" /> : null}還原</button>
+            </div>
+          </div>
+        ))
+      )}
+      {confirm && <Confirm title="還原這份備份？" confirmText="確定還原" strong onClose={() => setConfirm(null)}
+        message={`會用 ${confirm.id} 的 ${confirm.count} 筆資料取代目前的資料。還原前，系統會先把目前的資料另外存一份，萬一選錯還能救回來。`}
+        onConfirm={() => restore(confirm)} />}
     </Card>
   );
 }
@@ -124,7 +175,7 @@ export default function Settings() {
           <Field label="稱呼"><input className="input" value={f.displayName} onChange={(e) => setF({ ...f, displayName: e.target.value })} /></Field>
           <Field label="緊急預備金目標（幾個月必要生活費）"><input className="input" type="number" min="0" max="24" value={f.emergencyMonths} onChange={(e) => setF({ ...f, emergencyMonths: e.target.value })} /></Field>
           <Field label="Instagram 帳號" hint="可貼網址或 @帳號，系統只保留帳號名稱"><input className="input" value={f.igHandle} onChange={(e) => setF({ ...f, igHandle: e.target.value })} placeholder="chan1201_" /></Field>
-          <Field label="帳號定位（AI 分析內容時會參考）" full hint="例如：美業經營教學，幫美業新手做出有預約的 IG；主要受眾是剛開店 1～3 年的美睫美甲師"><textarea className="input" rows={2} value={f.igPositioning} onChange={(e) => setF({ ...f, igPositioning: e.target.value })} /></Field>
+          <Field label="帳號定位（AI 分析內容時會參考）" full hint="例如：減脂料理與日常，幫外食族吃得飽又能慢慢瘦；主要受眾是 25～40 歲正在減脂的上班族女生"><textarea className="input" rows={2} value={f.igPositioning} onChange={(e) => setF({ ...f, igPositioning: e.target.value })} /></Field>
           <Field label="個人目標（AI 每次都會參考）" full><textarea className="input" rows={4} value={f.goals} onChange={(e) => setF({ ...f, goals: e.target.value })} /></Field>
         </div>
         <button className="btn" onClick={saveProfile}>儲存設定</button>
@@ -146,6 +197,8 @@ export default function Settings() {
           <div>目前共有 {count} 筆資料。</div>
         </div>
       </Card>
+
+      <AutoBackups />
 
       <Card title="匯出備份">
         <p className="small muted mb">JSON 是完整備份，可以用來還原；CSV 方便用 Excel 或 Google 試算表查看。<br />想請 Claude 分析整體狀況：把 JSON 備份檔上傳到任何一個 Claude 新對話，請它「分析我這個月的經營狀況並給下個月建議」。</p>

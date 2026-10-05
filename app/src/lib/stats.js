@@ -8,6 +8,11 @@ export const POINTS_PER_DRAW = 30;
 export const cleanIgHandle = (v) => String(v || '').trim()
   .replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').split(/[/?#]/)[0];
 
+// 帳號定位：內容以減脂料理、減脂日常、生活分享與賣貨為主
+const NEW_POSITIONING = '闆闆小陳：記錄自己 72→57kg 的減脂日常，分享好做又吃得飽的減脂料理、外食吃法和生活日常，也真實分享自己在用的婕樂纖產品。主要受眾是正在減脂、想吃得開心又不想挨餓的女生。';
+// 舊版預設定位（以美業為主）：如果使用者沒改過，自動換成新版
+export const LEGACY_POSITIONINGS = ['闆闆小陳：美業霧唇師，分享美業經營方法與工具，也記錄自己 72→57kg 的減脂飲食日常。主要受眾是想把經營變簡單的美業人，以及正在減脂、想吃得開心的女生。'];
+
 export const DEFAULT_SETTINGS = {
   id: 'main',
   displayName: '小陳',
@@ -20,7 +25,7 @@ export const DEFAULT_SETTINGS = {
   strategy: 'balanced',
   extraDebtPayment: 0,
   igHandle: 'chan1201_',
-  igPositioning: '闆闆小陳：美業霧唇師，分享美業經營方法與工具，也記錄自己 72→57kg 的減脂飲食日常。主要受眾是想把經營變簡單的美業人，以及正在減脂、想吃得開心的女生。',
+  igPositioning: NEW_POSITIONING,
 };
 
 export const taskPoints = (task) => (task.done ? Number(task.points) || 0 : 0);
