@@ -55,10 +55,12 @@ test('瀏覽器空間不夠時只刪最舊的備份，不會整個清掉', async
   assert.equal(tiny.getItem('xc30-snapshots'), null);
 });
 
-test('新版預設計畫：不再有美業主題，並加入觸及練習', () => {
-  const tasks = generateMonthPlan({ start: '2026-10-05', length: 31, monthIndex: 1 });
-  assert.ok(!tasks.some((t) => /美業|霧唇/.test(`${t.title}${t.goal}${t.description}`)));
-  assert.ok(tasks.some((t) => t.title.startsWith('發布 Reels（減脂料理）')));
-  assert.ok(tasks.some((t) => t.title.startsWith('發布 Reels（生活日常）')));
-  assert.ok(tasks.some((t) => t.title.startsWith('觸及檢查')));
+test('新版預設計畫：個人魅力路線，沒有美業、教學收藏清單與招募', () => {
+  const tasks = generateMonthPlan({ start: '2026-10-06', length: 31, monthIndex: 1 });
+  const text = (t) => `${t.title}${t.goal}${t.description}`;
+  assert.ok(!tasks.some((t) => /美業|霧唇|食譜|收藏|招募/.test(text(t))));
+  for (const k of ['發布 Reels（今天吃什麼）', '發布 Reels（開箱好物）', '發布 Reels（生活日常）', '發布照片日記', '發布產品介紹', '觸及檢查']) {
+    assert.ok(tasks.some((t) => t.title.startsWith(k)), k);
+  }
+  assert.ok(tasks.some((t) => t.category === 'team'), '團隊培訓與夥伴關心仍保留');
 });

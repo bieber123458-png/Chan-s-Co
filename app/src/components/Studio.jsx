@@ -6,8 +6,7 @@ import { AiPanel } from './AiPanel.jsx';
 import { newId } from '../lib/api.js';
 import { fmtDateTime } from '../lib/format.js';
 import {
-  FRAMEWORKS, HOOK_FORMULAS, CTA_OPTIONS, COPY_FORMATS, CAROUSEL_STYLES, CAROUSEL_SPEC, buildCarousel, COMPLIANCE_NOTE,
-} from '../lib/copy.js';
+  FRAMEWORKS, HOOK_FORMULAS, CTA_OPTIONS, COPY_FORMATS, CAROUSEL_STYLES, CAROUSEL_SPEC, buildCarousel, COMPLIANCE_NOTE, DEFAULT_FRAMEWORK } from '../lib/copy.js';
 
 async function copyText(text, toast) {
   try {
@@ -18,10 +17,10 @@ async function copyText(text, toast) {
   }
 }
 
-const sectionsFor = (fw) => FRAMEWORKS[fw].sections.map(([role, hint, example]) => ({ role, hint, example, text: '' }));
+const sectionsFor = (fw) => (FRAMEWORKS[fw] || FRAMEWORKS[DEFAULT_FRAMEWORK]).sections.map(([role, hint, example]) => ({ role, hint, example, text: '' }));
 
 export function newCopyDraft() {
-  return { id: newId(), kind: 'copy', status: '草稿', format: 'Reels 腳本', framework: 'recipe', topic: '', points: '', sections: sectionsFor('recipe') };
+  return { id: newId(), kind: 'copy', status: '草稿', format: 'Reels 腳本', framework: DEFAULT_FRAMEWORK, topic: '', points: '', sections: sectionsFor(DEFAULT_FRAMEWORK) };
 }
 export function newCarouselDraft() {
   return { id: newId(), kind: 'carousel', status: '草稿', style: 'teach', topic: '', points: '', pages: buildCarousel(7, 'teach') };
@@ -47,7 +46,8 @@ export function CopyStudio({ draft, setDraft }) {
     return !!(await save('drafts', { ...d, title }, { silent }));
   };
 
-  const fw = FRAMEWORKS[d.framework];
+  // 舊草稿用的架構如果已經拿掉，改用預設架構顯示說明，草稿內容不變
+  const fw = FRAMEWORKS[d.framework] || FRAMEWORKS[DEFAULT_FRAMEWORK];
   return (
     <>
       <Card title="文案架構">
@@ -58,7 +58,7 @@ export function CopyStudio({ draft, setDraft }) {
           <Field label="主題"><input id="copy-topic" className="input" value={d.topic} onChange={(e) => set({ topic: e.target.value })} placeholder="例如：價目表怎麼寫客人才不會只問價錢" /></Field>
           <Field label="想講的重點（選填）"><input id="copy-points" className="input" value={d.points} onChange={(e) => set({ points: e.target.value })} placeholder="例如：先寫適合誰、放客人回饋" /></Field>
         </div>
-        {(d.framework === 'review' || d.framework === 'change') && <div className="notice warn small">{COMPLIANCE_NOTE}</div>}
+        {['review', 'change', 'product'].includes(d.framework) && <div className="notice warn small">{COMPLIANCE_NOTE}</div>}
 
         {d.sections.map((s, i) => (
           <div key={`${d.framework}-${i}`} className="field">
@@ -117,7 +117,7 @@ export function CarouselStudio({ draft, setDraft }) {
             {[5, 6, 7, 8, 9, 10].map((n) => <option key={n} value={n}>{n} 頁</option>)}
           </select>
         </Field>
-        <Field label="主題"><input id="carousel-topic" className="input" value={d.topic} onChange={(e) => set({ topic: e.target.value })} placeholder="例如：5 道 15 分鐘減脂晚餐" /></Field>
+        <Field label="主題"><input id="carousel-topic" className="input" value={d.topic} onChange={(e) => set({ topic: e.target.value })} placeholder="例如：這週的生活照片日記" /></Field>
         <Field label="想講的重點（選填）" full><input id="carousel-points" className="input" value={d.points} onChange={(e) => set({ points: e.target.value })} /></Field>
       </div>
       <details className="mb small"><summary style={{ cursor: 'pointer', color: 'var(--tea-dark)' }}>呈現規範（尺寸、字體、顏色）</summary><ul>{CAROUSEL_SPEC.map((x) => <li key={x}>{x}</li>)}</ul></details>

@@ -59,12 +59,12 @@ function Planner({ plan, setPlan, onSaved }) {
       <p className="small muted mb">一組 3～5 則講完一件事：第一則決定觀眾要不要往下看，至少一則放互動貼紙。</p>
       <Field label="類型" hint={type.tip}><Chips value={p.type} onChange={changeType} options={Object.entries(STORY_TYPES).map(([k, t]) => [k, t.name])} /></Field>
       <div className="form-grid">
-        <Field label="今天想發的事"><input id="story-topic" className="input" value={p.topic} onChange={(e) => set({ topic: e.target.value })} placeholder="例如：今天的減脂晚餐" /></Field>
+        <Field label="今天想發的事"><input id="story-topic" className="input" value={p.topic} onChange={(e) => set({ topic: e.target.value })} placeholder="例如：今天早餐吃什麼" /></Field>
         <Field label="這組的目標"><select id="story-goal" className="input" value={p.goal} onChange={(e) => set({ goal: e.target.value })}>{GOALS.map((g) => <option key={g}>{g}</option>)}</select></Field>
         <Field label="預計發布日期"><input id="story-date" className="input" type="date" value={p.date} onChange={(e) => set({ date: e.target.value })} /></Field>
         <Field label="預計時段"><select id="story-slot" className="input" value={p.slot} onChange={(e) => set({ slot: e.target.value })}>{TIME_SLOTS.map((t) => <option key={t}>{t}</option>)}</select></Field>
       </div>
-      {p.type === 'review' && <div className="notice warn small">{COMPLIANCE_NOTE}</div>}
+      {['review', 'product'].includes(p.type) && <div className="notice warn small">{COMPLIANCE_NOTE}</div>}
       {!hasSticker && <div className="notice info small">這組還沒有互動貼紙。你的限動平均約 730 人看，但互動幾乎是 0，建議至少一則加投票或問答。</div>}
 
       {p.frames.map((f, i) => (

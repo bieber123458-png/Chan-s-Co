@@ -179,6 +179,16 @@ export function StoreProvider({ mode, status, initialData, user, onLogout, toast
     saveMany('tasks', legacy.map((t) => ({ ...t, date: dateOfDay(settings.startDate, t.day) })));
   }, [data.tasks, settings.startDate, saveMany]);
 
+  // 使用者不要「招募新夥伴」的任務：還沒做、也沒寫紀錄的直接移除（做過的保留當紀錄）
+  const recruitCleaned = useRef(false);
+  useEffect(() => {
+    if (recruitCleaned.current) return;
+    const ids = data.tasks.filter((t) => /^招募[：:]/.test(t.title || '') && !t.done && !t.result && !t.reflection).map((t) => t.id);
+    if (!ids.length) return;
+    recruitCleaned.current = true;
+    removeMany('tasks', ids);
+  }, [data.tasks, removeMany]);
+
   const value = {
     noCloud, leftover, saving: pending > 0, snapshots, backupNow, backupTick, keepBackups: keep,
     mode, status, user, data, settings, save, saveMany, remove, removeMany, saveSettings, importAll, ai, toast, downloadFile, promptFor, saveManualAi, logout: onLogout,

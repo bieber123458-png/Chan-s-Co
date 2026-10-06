@@ -61,13 +61,14 @@ test('月付不足以支付利息時判定無法還清', () => {
   assert.ok(payoffMonths(100000, 15, 5000).months > 20);
 });
 
-test('每月計畫：依月份天數產生，每週 3 支 Reels 與 2 篇輪播，月底有覆盤', async () => {
+test('每月計畫：依月份天數產生，每週 3 支 Reels、照片日記與產品介紹，月底有覆盤', async () => {
   const { generateMonthPlan } = await import('../src/lib/plan.js');
   const plan = generateMonthPlan({ start: '2026-10-15', length: 31, monthIndex: 0 });
   assert.ok(plan.every((t) => t.date >= '2026-10-15' && t.date <= '2026-11-14'));
   const week1 = plan.filter((t) => t.date <= '2026-10-21');
   assert.equal(week1.filter((t) => t.title.startsWith('發布 Reels')).length, 3);
-  assert.equal(week1.filter((t) => t.title.startsWith('發布輪播')).length, 2);
+  assert.equal(week1.filter((t) => t.title.startsWith('發布照片日記')).length, 1);
+  assert.equal(week1.filter((t) => t.title.startsWith('發布產品介紹')).length, 1);
   assert.ok(plan.some((t) => t.date === '2026-11-14' && t.title.startsWith('本月覆盤')));
   assert.equal(new Set(plan.map((t) => t.id)).size, plan.length);
   const m2 = generateMonthPlan({ start: '2026-11-15', length: 30, monthIndex: 1 });

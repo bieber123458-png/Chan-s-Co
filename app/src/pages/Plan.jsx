@@ -80,7 +80,7 @@ export default function Plan() {
 
       {outdated && (
         <div className="notice info">
-          <strong>有新版預設計畫：</strong>內容改成減脂料理、減脂日常系列、生活日常三條線，每週加上「提高觸及」的練習（關鍵字、觸及檢查、合作互動）；已完成或有寫紀錄的任務都會保留。
+          <strong>有新版預設計畫：</strong>內容改成個人魅力路線：今天吃什麼、開箱好物、生活日常、照片日記和產品介紹，不再有教學和收藏清單；拿掉招募任務，保留「提高觸及」練習。已完成或有寫紀錄的任務都會保留。
           <div className="row mt"><button className="btn sm" onClick={() => setConfirm('upgrade')}>從 {fmtShortDate(fromDate)} 起套用新版</button><span className="tiny">已完成或有填寫紀錄的任務都會保留</span></div>
         </div>
       )}

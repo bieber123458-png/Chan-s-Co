@@ -175,7 +175,7 @@ export default function Settings() {
           <Field label="稱呼"><input className="input" value={f.displayName} onChange={(e) => setF({ ...f, displayName: e.target.value })} /></Field>
           <Field label="緊急預備金目標（幾個月必要生活費）"><input className="input" type="number" min="0" max="24" value={f.emergencyMonths} onChange={(e) => setF({ ...f, emergencyMonths: e.target.value })} /></Field>
           <Field label="Instagram 帳號" hint="可貼網址或 @帳號，系統只保留帳號名稱"><input className="input" value={f.igHandle} onChange={(e) => setF({ ...f, igHandle: e.target.value })} placeholder="chan1201_" /></Field>
-          <Field label="帳號定位（AI 分析內容時會參考）" full hint="例如：減脂料理與日常，幫外食族吃得飽又能慢慢瘦；主要受眾是 25～40 歲正在減脂的上班族女生"><textarea className="input" rows={2} value={f.igPositioning} onChange={(e) => setF({ ...f, igPositioning: e.target.value })} /></Field>
+          <Field label="帳號定位（AI 分析內容時會參考）" full hint="例如：分享每天吃什麼、開箱好物和生活日常，走真實有個性的風格；主要受眾是 25～40 歲想把自己照顧好的女生"><textarea className="input" rows={2} value={f.igPositioning} onChange={(e) => setF({ ...f, igPositioning: e.target.value })} /></Field>
           <Field label="個人目標（AI 每次都會參考）" full><textarea className="input" rows={4} value={f.goals} onChange={(e) => setF({ ...f, goals: e.target.value })} /></Field>
         </div>
         <button className="btn" onClick={saveProfile}>儲存設定</button>
