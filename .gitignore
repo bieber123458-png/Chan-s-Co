@@ -3,3 +3,6 @@
 .dev.vars
 node_modules/
 .DS_Store
+
+# 交接用的 ZIP（由 git archive 產生，不需要提交）
+xiaochen-system-handoff-*.zip
