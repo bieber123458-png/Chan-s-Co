@@ -1,0 +1,5 @@
+# 機密與本機資料（各子資料夾也有自己的 .gitignore）
+.env
+.dev.vars
+node_modules/
+.DS_Store

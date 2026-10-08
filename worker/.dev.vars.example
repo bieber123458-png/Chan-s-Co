@@ -1,0 +1,5 @@
+# 複製成 .dev.vars 給 `npm run dev`（wrangler dev）本機測試使用；.dev.vars 已被 .gitignore 排除
+# 正式部署時不要用這個檔案：金鑰請用 `npx wrangler secret put ANTHROPIC_API_KEY`
+ALLOWED_ORIGINS=http://localhost:5173
+# 選填：沒有時 AI 功能會回報「尚未設定」，其他功能正常
+ANTHROPIC_API_KEY=

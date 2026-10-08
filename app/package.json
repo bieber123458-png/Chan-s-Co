@@ -12,6 +12,7 @@
     "dev:client": "vite",
     "dev:server": "node --no-warnings=ExperimentalWarning --watch server/index.js",
     "build": "vite build",
+    "build:static": "node scripts/build-static.mjs",
     "start": "node --no-warnings=ExperimentalWarning server/index.js",
     "test": "node --no-warnings=ExperimentalWarning --test tests/*.test.js"
   },
